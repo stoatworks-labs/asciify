@@ -188,6 +188,11 @@ not for a pixel:
   `asctest --custom` exists for.
 - **The build is universal and exports `plugMain`** — `lipo` reports
   `x86_64 arm64`, `nm -gU` finds `_plugMain`.
+- **Windows compiles**, proven by a `workflow_dispatch` run that built the macOS
+  universal bundle, the Windows x64 `.dll` and the NSIS installer green before
+  anything was tagged. Dispatching that workflow is the cheap way to test an
+  FFGL build without publishing: the release job is gated on `refs/tags/v*`, so
+  a manual run builds and skips publication.
 - **The shade ramp is exact quarters.** ░▒▓█ measure 0.25/0.50/0.75/1.00. This
   was wrong first time — ░ was drawn at 0.125 and ▓ at 0.875 — and the
   lopsidedness showed up as a single knife-edge cell that `--match` failed on,
@@ -202,11 +207,9 @@ not for a pixel:
   Custom Set field appears at all, whether the groups read sensibly — is
   untested. The text parameter is the least certain: the SDK supports it and
   Resolume's own example uses it, but that is not the same as having seen it.
-- **Never built on Windows or Linux.** The CMake and CI are copied from a sibling
-  project where they work; the code is portable and uses nothing platform-
-  specific outside `Diag.cpp`, but it has not been compiled there. A
-  `workflow_dispatch` run builds both without publishing anything, which is the
-  cheap way to find out.
+- **Never built on Linux.** There is no CI job for it, and nothing has tried. The
+  code uses nothing platform-specific outside `Diag.cpp`, but that is an
+  argument rather than a build.
 - **Nothing timed.** The cell pass compares every glyph in the alphabet against
   every cell — up to 95 comparisons per cell for the ASCII set, ~123 for a full
   custom alphabet. At 320 columns on a 4K frame that is 320×180 cells × 95, which

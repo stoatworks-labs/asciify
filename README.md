@@ -177,14 +177,18 @@ changing anything — it has the design invariants and the traps.
   code points, no two glyphs drawn identically (`asctest --font`).
 - **The macOS build is universal and exports `plugMain`** — `lipo` reports
   `x86_64 arm64`.
+- **It compiles on Windows.** A `workflow_dispatch` run of the release workflow
+  builds the macOS universal bundle, the Windows x64 `.dll` and the NSIS
+  installer, all green. The release job is gated on a `v*` tag, so that run
+  publishes nothing — it is the cheap way to check a build.
 
 **Not verified:**
 
 - **It has never been loaded into Resolume.** Everything about how the
   parameters *present* in the host is untested — the colour swatches, the
   grouping, and in particular whether the Custom Set text field appears at all.
-- **Never built on Windows or Linux.** The CMake and CI are copied from a sibling
-  project where they work, but this code has not been compiled there.
+- **Never built on Linux.** There is no CI job for it. Nothing in the code is
+  platform-specific outside `Diag.cpp`, but that is an argument.
 - **Nothing timed.** The cell pass compares every glyph in the alphabet against
   every cell. It should be cheap — it runs at one pixel per character, not per
   screen pixel — but that is an argument, not a measurement.
