@@ -1,0 +1,165 @@
+name: release
+
+# Build the Asciify FFGL plugin for the two platforms Resolume runs on:
+#   - macOS  -> universal (arm64 + x86_64) Asciify.bundle
+#   - Windows -> x64 Asciify.dll (GLEW static-linked via vcpkg)
+# Each ships as a zip; drop the bundle/dll into Resolume's "Extra Effects"
+# folder. Trigger manually (Actions > release > Run workflow) or by pushing a
+# v* tag.
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: macos-universal, os: macos-14,       artifact: Asciify.bundle }
+          - { name: windows-x86_64,  os: windows-latest, artifact: Asciify.dll }
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      # --- macOS: no extra deps, universal build straight from CMake ---
+      - name: Configure (macOS)
+        if: runner.os == 'macOS'
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DASCIIFY_BUILD_TOOLS=OFF
+
+      # --- Windows: GLEW comes from vcpkg, static-linked (static-md keeps the
+      #     CRT dynamic so the plugin matches the host) so the .dll has no
+      #     external glew32.dll runtime dependency. ---
+      - name: Configure (Windows)
+        if: runner.os == 'Windows'
+        run: >
+          cmake -B build -A x64
+          -DCMAKE_BUILD_TYPE=Release
+          -DVCPKG_TARGET_TRIPLET=x64-windows-static-md
+          -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake"
+
+      - name: Build
+        run: cmake --build build --config Release --parallel
+
+      - name: Derive version
+        id: ver
+        shell: bash
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            echo "version=${GITHUB_REF#refs/tags/v}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=0.0.0-dev.${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Collect artifact
+        shell: bash
+        run: |
+          mkdir -p out
+          if [ "${{ runner.os }}" = "macOS" ]; then
+            cp -R "build/Asciify.bundle" "out/Asciify.bundle"
+            # Sanity-check the bundle really is universal and exports plugMain.
+            lipo -archs "out/Asciify.bundle/Contents/MacOS/Asciify"
+            nm -gU "out/Asciify.bundle/Contents/MacOS/Asciify" | grep -q "_plugMain"
+          else
+            cp "build/Release/Asciify.dll" "out/Asciify.dll"
+          fi
+          ls -R out
+
+      - name: Archive (zip)
+        shell: bash
+        run: |
+          cd out
+          if command -v 7z >/dev/null 2>&1; then
+            7z a "../asciify-${{ matrix.name }}.zip" ./*
+          else
+            zip -r "../asciify-${{ matrix.name }}.zip" ./*
+          fi
+
+      - name: Disk image (macOS)
+        if: runner.os == 'macOS'
+        shell: bash
+        # A .dmg, but deliberately NOT a .pkg. An FFGL plugin's destination is
+        # per-user and edition-specific — the README installs to
+        # ~/Documents/Resolume {Arena,Avenue}/Extra Effects — so a .pkg would
+        # have to guess a path and would silently install to the wrong one for
+        # half of users. Mounting an image and dragging the bundle where the
+        # README says is the honest shape here.
+        run: |
+          source scripts/release-lib.sh
+          rl_init "Asciify" asciify "${{ steps.ver.outputs.version }}" \
+            com.stoatworks.asciify "$GITHUB_WORKSPACE"
+          cp README.md out/ 2>/dev/null || true
+          rl_adhoc_sign "out/Asciify.bundle"
+          rl_dmg "${{ matrix.name }}" out
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: asciify-${{ matrix.name }}
+          path: |
+            *.zip
+            *.dmg
+          if-no-files-found: error
+
+  windows-installer:
+    name: Windows installer
+    needs: build
+    runs-on: ubuntu-latest
+    # makensis cross-compiles, so the installer is wrapped here from the zip the
+    # Windows job uploaded. Its directory page defaults to the common FFGL
+    # folder but stays editable, because Resolume reads plugins from a path the
+    # user chooses per edition.
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Install NSIS
+        run: sudo apt-get update && sudo apt-get install -y nsis
+
+      - name: Build installer
+        shell: bash
+        run: |
+          source scripts/release-lib.sh
+          version="${GITHUB_REF_NAME#v}"
+          case "$version" in [0-9]*) ;; *) version="0.0.0" ;; esac
+          rl_init "Asciify" asciify "$version" com.stoatworks.asciify "$PWD/installers"
+          zip="$(find artifacts -name "asciify-windows-x86_64.zip" | head -1)"
+          if [ -z "$zip" ]; then echo "no Windows artefact, nothing to do"; exit 0; fi
+          stage="$RUNNER_TEMP/stage-win"
+          rm -rf "$stage"; mkdir -p "$stage"
+          unzip -q "$zip" -d "$stage"
+          cp README.md "$stage/" 2>/dev/null || true
+          # --cli: a plugin has no executable to make a shortcut to.
+          rl_nsis windows-x86_64 "$stage" --cli
+          ls -l installers
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: asciify-windows-installer
+          path: installers/*
+          if-no-files-found: warn
+
+  release:
+    name: Publish release
+    needs: [build, windows-installer]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/**/*
+          generate_release_notes: true
