@@ -77,7 +77,7 @@ jobs:
           if [ "${{ runner.os }}" = "macOS" ]; then
             cp -R "build/Asciify.ofx.bundle" "ofxout/Asciify.ofx.bundle"
             lipo -archs "ofxout/Asciify.ofx.bundle/Contents/MacOS/Asciify.ofx"
-            nm -gU "ofxout/Asciify.ofx.bundle/Contents/MacOS/Asciify.ofx" | grep -q "_OfxGetPlugin"
+            nm -gU "ofxout/Asciify.ofx.bundle/Contents/MacOS/Asciify.ofx" | grep "_OfxGetPlugin" >/dev/null
             codesign --force --sign - --timestamp=none "ofxout/Asciify.ofx.bundle"
           else
             mkdir -p "ofxout/Asciify.ofx.bundle/Contents/Win64"
