@@ -85,6 +85,7 @@ cell, so it is MIT along with everything else and there is nothing vendored:
 
 ## Download
 
+<!-- downloads:start -->
 Grab the latest build from
 [Releases](https://github.com/stoatworks-labs/asciify/releases):
 
@@ -92,8 +93,12 @@ Grab the latest build from
   loads in both Apple Silicon and Intel builds of Resolume.
 - **Windows** — `asciify-windows-installer` `.exe`, or the `.zip` if you would
   rather place the `.dll` yourself.
+<!-- downloads:end -->
 
 The macOS build is **not notarised**. See [UNSIGNED.md](docs/UNSIGNED.md).
+
+There is a **[user guide](docs/USER-GUIDE.md)** if you would rather be told which
+two controls matter than read the whole list.
 
 ## Controls
 
