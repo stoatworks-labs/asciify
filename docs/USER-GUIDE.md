@@ -47,6 +47,17 @@ On macOS the build is unsigned, so Gatekeeper may quarantine it:
 xattr -dr com.apple.quarantine ~/Documents/Resolume\ Arena/Extra\ Effects/Asciify.bundle
 ```
 
+### OpenFX hosts (Resolve, Vegas, Nuke, Natron)
+
+Asciify also ships as an OpenFX plugin — same effect, same controls. Copy
+`Asciify.ofx.bundle` from the `-ofx-` download into the OpenFX folder and
+restart the host:
+
+```
+macOS    /Library/OFX/Plugins/
+Windows  C:\Program Files\Common Files\OFX\Plugins\
+```
+
 ---
 
 ## Start here: Columns and Structure

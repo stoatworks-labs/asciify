@@ -71,6 +71,19 @@ jobs:
           else
             cp "build/Release/Asciify.dll" "out/Asciify.dll"
           fi
+          # OpenFX build: shipped as its own zip, not folded into the FFGL
+          # artefact — it installs to the OFX folder, not Resolume's.
+          mkdir -p ofxout
+          if [ "${{ runner.os }}" = "macOS" ]; then
+            cp -R "build/Asciify.ofx.bundle" "ofxout/Asciify.ofx.bundle"
+            lipo -archs "ofxout/Asciify.ofx.bundle/Contents/MacOS/Asciify.ofx"
+            nm -gU "ofxout/Asciify.ofx.bundle/Contents/MacOS/Asciify.ofx" | grep -q "_OfxGetPlugin"
+            codesign --force --sign - --timestamp=none "ofxout/Asciify.ofx.bundle"
+          else
+            mkdir -p "ofxout/Asciify.ofx.bundle/Contents/Win64"
+            cp "build/Asciify.ofx.bundle/Contents/Win64/Asciify.ofx" "ofxout/Asciify.ofx.bundle/Contents/Win64/Asciify.ofx"
+          fi
+          ls -R ofxout
           ls -R out
 
       - name: Archive (zip)
@@ -81,6 +94,12 @@ jobs:
             7z a "../asciify-${{ matrix.name }}.zip" ./*
           else
             zip -r "../asciify-${{ matrix.name }}.zip" ./*
+          fi
+          cd ../ofxout
+          if command -v 7z >/dev/null 2>&1; then
+            7z a "../asciify-ofx-${{ matrix.name }}.zip" ./*
+          else
+            zip -r "../asciify-ofx-${{ matrix.name }}.zip" ./*
           fi
 
       - name: Disk image (macOS)

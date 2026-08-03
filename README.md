@@ -132,6 +132,21 @@ All builds, checksums and release notes: [github.com/stoatworks-labs/asciify/rel
 
 <!-- downloads:end -->
 
+## OpenFX — Resolve, Vegas, Nuke, Natron
+
+The same effect also builds as an OpenFX plugin, so it runs in DaVinci Resolve
+(Edit and Color pages, and Fusion), Vegas Pro, Nuke and Natron. It is
+the identical matching — the OpenFX build links the same font, alphabets and moment maths the harness tests.
+
+Grab the `asciify-ofx-*` zip for your platform from the release and copy
+`Asciify.ofx.bundle` into the standard OpenFX folder, then restart the host:
+
+```
+macOS    /Library/OFX/Plugins/
+Windows  C:\Program Files\Common Files\OFX\Plugins\
+```
+
+
 The macOS build is **not notarised**. See [UNSIGNED.md](docs/UNSIGNED.md).
 
 There is a **[user guide](docs/USER-GUIDE.md)** if you would rather be told which

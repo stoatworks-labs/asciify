@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.15)
 
 project(Asciify
-    VERSION 0.1.0
+    VERSION 0.2.0
     LANGUAGES CXX
 )
 
@@ -131,6 +131,68 @@ if(ASCIIFY_BUILD_TOOLS AND APPLE)
         "-framework OpenGL"
         "-framework AppKit"
     )
+endif()
+
+# ---------------------------------------------------------------------------
+# The OpenFX build of the same effect, for Resolve/Nuke/Natron/Vegas. CPU
+# render against the vendored OFX SDK subset under external/openfx (C headers
+# + the official C++ Support library, BSD-3 — see external/openfx/LICENSE.md).
+# Links the font, alphabet, matching and controls straight from source: the
+# idea has one home, only the GPU passes are mirrored on the CPU.
+# ---------------------------------------------------------------------------
+option(BUILD_OFX "Build the OpenFX plugin" ON)
+
+if(BUILD_OFX)
+    set(OFX_SDK "${CMAKE_CURRENT_SOURCE_DIR}/external/openfx")
+
+    add_library(AsciifyOFX MODULE
+        source/ofx/AsciifyOFX.cpp
+        source/Alphabet.cpp
+        source/Controls.cpp
+        source/Font.cpp
+        source/FontData.cpp
+        source/Match.cpp
+        ${OFX_SDK}/Support/Library/ofxsCore.cpp
+        ${OFX_SDK}/Support/Library/ofxsImageEffect.cpp
+        ${OFX_SDK}/Support/Library/ofxsInteract.cpp
+        ${OFX_SDK}/Support/Library/ofxsLog.cpp
+        ${OFX_SDK}/Support/Library/ofxsMultiThread.cpp
+        ${OFX_SDK}/Support/Library/ofxsParams.cpp
+        ${OFX_SDK}/Support/Library/ofxsProperty.cpp
+        ${OFX_SDK}/Support/Library/ofxsPropertyValidation.cpp
+    )
+    target_include_directories(AsciifyOFX PRIVATE
+        "${OFX_SDK}/include"
+        "${OFX_SDK}/Support/include"
+    )
+    target_compile_definitions(AsciifyOFX PRIVATE
+        PLUGIN_VERSION_MAJOR=${PROJECT_VERSION_MAJOR}
+        PLUGIN_VERSION_MINOR=${PROJECT_VERSION_MINOR}
+    )
+
+    # An OFX plugin is not a macOS .bundle in the CMake sense: hosts expect the
+    # fixed layout <Name>.ofx.bundle/Contents/<arch>/<Name>.ofx, assembled here
+    # by hand. "MacOS" is the OFX architecture name for universal binaries.
+    set(OFX_BUNDLE_DIR "${CMAKE_BINARY_DIR}/Asciify.ofx.bundle")
+    set_target_properties(AsciifyOFX PROPERTIES
+        PREFIX ""
+        SUFFIX ".ofx"
+        OUTPUT_NAME "Asciify"
+        LIBRARY_OUTPUT_DIRECTORY "${OFX_BUNDLE_DIR}/Contents/MacOS"
+    )
+    if(APPLE)
+        configure_file(cmake/InfoOFX.plist.in
+            "${OFX_BUNDLE_DIR}/Contents/Info.plist" @ONLY)
+    elseif(WIN32)
+        set_target_properties(AsciifyOFX PROPERTIES
+            LIBRARY_OUTPUT_DIRECTORY "${OFX_BUNDLE_DIR}/Contents/Win64"
+            RUNTIME_OUTPUT_DIRECTORY "${OFX_BUNDLE_DIR}/Contents/Win64"
+            LIBRARY_OUTPUT_DIRECTORY_RELEASE "${OFX_BUNDLE_DIR}/Contents/Win64"
+            RUNTIME_OUTPUT_DIRECTORY_RELEASE "${OFX_BUNDLE_DIR}/Contents/Win64")
+    else()
+        set_target_properties(AsciifyOFX PROPERTIES
+            LIBRARY_OUTPUT_DIRECTORY "${OFX_BUNDLE_DIR}/Contents/Linux-x86-64")
+    endif()
 endif()
 
 # ---------------------------------------------------------------------------

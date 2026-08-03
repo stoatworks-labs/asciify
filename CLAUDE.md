@@ -17,6 +17,17 @@ Read `AGENTS.md` before changing the matching maths or the font.
 - Put real footage through the real shaders (for the project video):
   `ffmpeg … -f rawvideo -pix_fmt rgba - | ./build/asctest --pipe --width W --height H [--script cues.txt] | ffmpeg …`
 
+## OpenFX build
+- `source/ofx/AsciifyOFX.cpp` → `build/Asciify.ofx.bundle` (target `AsciifyOFX`,
+  `-DBUILD_OFX=OFF` to skip) for Resolve/Nuke/Natron/Vegas. Links Match/Font/
+  Alphabet/Controls straight from source — only the three GPU passes are
+  mirrored on the CPU. Change a pass's arithmetic in Shaders.cpp, change the
+  matching phase there too.
+- OFX SDK subset (BSD-3) vendored under `external/openfx`.
+- Smoke test (ofxprobe from resolume-ofx-bridge; `--out` writes input|output BMP):
+  `../resolume-ofx-bridge/build/ofxprobe --dir build --render com.stoatworks.asciify --size 640x360 --out /tmp/a.bmp`
+- Install for Resolve: copy the bundle into `/Library/OFX/Plugins`.
+
 ## Verify
 - Everything: `tools/verify.sh`
 - GLSL vs C++ matching maths: `./build/asctest --match`
