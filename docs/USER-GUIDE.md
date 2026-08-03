@@ -154,6 +154,23 @@ especially on moving footage.
 
 ---
 
+## Audio reactivity
+
+Resolume can drive any slider here from its own audio analysis: the dropdown beside a
+parameter, then **FFT**, a band and a gain. No plugin setting is involved.
+
+- **Columns** on the low band is the one to try first: the whole grid re-rasterises with the
+  kick, coarse characters on the hit resolving to fine ones as it decays. Keep the gain
+  modest — the effect is strong.
+- **Tone** or **Contrast** on overall level makes the picture itself swell with the mix
+  without the grid moving.
+- **Dither** on the high band adds churn to the texture when the hats are busy.
+
+Avoid audio-driving **Characters** or **Glyph Edge** — they are dropdowns, and the intermediate
+values just cut between alphabets.
+
+---
+
 ## Troubleshooting
 
 **The effect does nothing.** Almost always a shader that would not compile, which Resolume reports
