@@ -83,16 +83,34 @@ cell, so it is MIT along with everything else and there is nothing vendored:
 
 ![The font atlas](docs/font.png)
 
+<!-- downloads:start -->
+
 ## Download
 
-<!-- downloads:start -->
-Grab the latest build from
-[Releases](https://github.com/stoatworks-labs/asciify/releases):
+**[v0.1.0](https://github.com/stoatworks-labs/asciify/releases/tag/v0.1.0)** — prebuilt for macOS and Windows. Pick your platform:
 
-- **macOS** — `asciify-macos-universal.dmg` (or the `.zip`). Universal, so it
-  loads in both Apple Silicon and Intel builds of Resolume.
-- **Windows** — `asciify-windows-installer` `.exe`, or the `.zip` if you would
-  rather place the `.dll` yourself.
+<details>
+<summary><b>macOS</b> — Universal (Apple Silicon + Intel)</summary>
+
+| Build | Download | Size |
+| --- | --- | --- |
+| Universal (Apple Silicon + Intel) · .dmg disk image | [`asciify-0.1.0-macos-universal.dmg`](https://github.com/stoatworks-labs/asciify/releases/download/v0.1.0/asciify-0.1.0-macos-universal.dmg) | 209 KB |
+| Universal (Apple Silicon + Intel) · .zip archive | [`asciify-macos-universal.zip`](https://github.com/stoatworks-labs/asciify/releases/latest/download/asciify-macos-universal.zip) | 165 KB |
+
+</details>
+
+<details>
+<summary><b>Windows</b> — x64</summary>
+
+| Build | Download | Size |
+| --- | --- | --- |
+| x64 · .exe installer | [`asciify-0.1.0-windows-x86_64-setup.exe`](https://github.com/stoatworks-labs/asciify/releases/download/v0.1.0/asciify-0.1.0-windows-x86_64-setup.exe) | 219 KB |
+| x64 · .zip archive | [`asciify-windows-x86_64.zip`](https://github.com/stoatworks-labs/asciify/releases/latest/download/asciify-windows-x86_64.zip) | 113 KB |
+
+</details>
+
+All builds, checksums and release notes: [github.com/stoatworks-labs/asciify/releases](https://github.com/stoatworks-labs/asciify/releases).
+
 <!-- downloads:end -->
 
 The macOS build is **not notarised**. See [UNSIGNED.md](docs/UNSIGNED.md).
