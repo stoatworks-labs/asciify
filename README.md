@@ -14,6 +14,8 @@ An ASCII art renderer for [Resolume](https://resolume.com) Arena and Avenue, as
 an FFGL effect. It divides the frame into character cells and replaces each one
 with the character that stands in for it best.
 
+**Video:** [What it does, in 45 seconds](https://www.youtube.com/watch?v=Hzy60YIhKpg)
+
 ![The default green terminal on the type card](docs/hero.jpg)
 
 <sub>The repo's type card at 80 columns — a tone ramp on the left, bars at eight
