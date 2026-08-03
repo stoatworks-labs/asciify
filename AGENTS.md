@@ -268,3 +268,27 @@ The page is emphatic that it is not the plugin, and lists what it does not
 reproduce in a disclosure at the foot. Keep that: it is a port, so nothing on it
 is evidence about the plugin, and the offline harness in this repository is
 still the only thing that measures anything.
+
+## Factory presets
+
+`source/Presets.h` is one table of named looks in the host-facing 0..1
+parameter space, and it drives **both** builds — the FFGL constructor and the
+OFX describe each read it, so a preset cannot drift between Resolume and
+Resolve. Element 0 of the dropdown is always **Custom**, which is not in the
+table: it means "the sliders are the truth".
+
+The mechanics are deliberately copy-based. Picking a preset copies the table
+row into the real parameters — the FFGL side raises `FF_EVENT_FLAG_VALUE` per
+changed parameter so the host re-reads its sliders, the OFX side setValues
+inside one edit block so undo takes the whole preset back at once. A host that
+ignores the events still renders the preset correctly and merely shows stale
+knobs. Editing any covered parameter afterwards flips the dropdown back to
+Custom — judged by comparing values, not by the change reason, so a host
+echoing our own writes cannot un-set the preset.
+
+A preset covers type and colour. The Custom Set string belongs to the
+operator, and Mix is the wet/dry — neither is part of any look.
+
+Verified by rendering a preset and its hand-set equivalent through the offline
+harness and `ofxprobe --edit` (which delivers the set as a real user edit,
+with `kOfxActionInstanceChanged`) and comparing byte-for-byte.

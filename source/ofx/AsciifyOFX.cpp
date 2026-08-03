@@ -24,6 +24,7 @@
 #include "../Controls.h"
 #include "../Font.h"
 #include "../Match.h"
+#include "../Presets.h"
 
 namespace
 {
@@ -53,6 +54,7 @@ constexpr const char* kParamPaper        = "paperColour";
 constexpr const char* kParamPaperOpacity = "paperOpacity";
 constexpr const char* kParamEdge         = "glyphEdge";
 constexpr const char* kParamMix          = "mix";
+constexpr const char* kParamPreset       = "preset";
 
 /// What the cell pass decided, one entry per character cell.
 struct CellChoice
@@ -279,6 +281,75 @@ public:
 		paperOpacity = fetchDoubleParam( kParamPaperOpacity );
 		edge         = fetchChoiceParam( kParamEdge );
 		mix          = fetchDoubleParam( kParamMix );
+		preset       = fetchChoiceParam( kParamPreset );
+	}
+
+	void changedParam( const OFX::InstanceChangedArgs& args, const std::string& paramName ) override
+	{
+		using namespace asciify::presets;
+
+		if( paramName == kParamPreset )
+		{
+			int chosen = 0;
+			preset->getValue( chosen );
+			if( chosen <= 0 || chosen > kCount || applyingPreset )
+				return;
+
+			// The copy IS the preset — same table as the FFGL build, same 0..1
+			// space. One edit block so undo takes the whole preset back at once.
+			const Preset& p = kPresets[ chosen - 1 ];
+			applyingPreset  = true;
+			beginEditBlock( "Preset" );
+			setDouble( columns, p.v[ kColumns ] );
+			setChoice( set, p.v[ kSet ] );
+			setDouble( structure, p.v[ kStructure ] );
+			setDouble( tone, p.v[ kTone ] );
+			setDouble( contrast, p.v[ kContrast ] );
+			setBool( invert, p.v[ kInvert ] );
+			setDouble( dither, p.v[ kDither ] );
+			setDouble( tint, p.v[ kTint ] );
+			setRGB( ink, p.v[ kInkR ], p.v[ kInkG ], p.v[ kInkB ] );
+			setRGB( paper, p.v[ kPaperR ], p.v[ kPaperG ], p.v[ kPaperB ] );
+			setDouble( paperOpacity, p.v[ kPaperOpacity ] );
+			setChoice( edge, p.v[ kEdge ] );
+			endEditBlock();
+			applyingPreset = false;
+			return;
+		}
+
+		// Editing a covered control while a preset is active hands control back
+		// to the sliders. Judged by value, not by the change reason: hosts are
+		// not consistent about reasons, but "still equal to the preset" is
+		// unambiguous and also absorbs the host echoing our own setValues.
+		if( applyingPreset || args.reason == OFX::eChangeTime )
+			return;
+
+		int active = 0;
+		preset->getValue( active );
+		if( active <= 0 || active > kCount )
+			return;
+
+		const Preset& p    = kPresets[ active - 1 ];
+		const bool covered =
+			( paramName == kParamColumns && doubleDiffers( columns, p.v[ kColumns ] ) ) ||
+			( paramName == kParamSet && choiceDiffers( set, p.v[ kSet ] ) ) ||
+			( paramName == kParamStructure && doubleDiffers( structure, p.v[ kStructure ] ) ) ||
+			( paramName == kParamTone && doubleDiffers( tone, p.v[ kTone ] ) ) ||
+			( paramName == kParamContrast && doubleDiffers( contrast, p.v[ kContrast ] ) ) ||
+			( paramName == kParamInvert && boolDiffers( invert, p.v[ kInvert ] ) ) ||
+			( paramName == kParamDither && doubleDiffers( dither, p.v[ kDither ] ) ) ||
+			( paramName == kParamTint && doubleDiffers( tint, p.v[ kTint ] ) ) ||
+			( paramName == kParamInk && rgbDiffers( ink, p.v[ kInkR ], p.v[ kInkG ], p.v[ kInkB ] ) ) ||
+			( paramName == kParamPaper && rgbDiffers( paper, p.v[ kPaperR ], p.v[ kPaperG ], p.v[ kPaperB ] ) ) ||
+			( paramName == kParamPaperOpacity && doubleDiffers( paperOpacity, p.v[ kPaperOpacity ] ) ) ||
+			( paramName == kParamEdge && choiceDiffers( edge, p.v[ kEdge ] ) );
+
+		if( covered )
+		{
+			applyingPreset = true;
+			preset->setValue( 0 );
+			applyingPreset = false;
+		}
 	}
 
 	void render( const OFX::RenderArguments& args ) override
@@ -553,6 +624,59 @@ private:
 	OFX::DoubleParam* paperOpacity  = nullptr;
 	OFX::ChoiceParam* edge          = nullptr;
 	OFX::DoubleParam* mix           = nullptr;
+	OFX::ChoiceParam* preset        = nullptr;
+
+	// The preset table is plain floats; these give each param type its
+	// reading of one. Option values are element indices, booleans are 0/1.
+	static bool doubleDiffers( OFX::DoubleParam* p, float v )
+	{
+		double current = 0.0;
+		p->getValue( current );
+		return std::fabs( current - double( v ) ) > 1e-4;
+	}
+	static bool boolDiffers( OFX::BooleanParam* p, float v )
+	{
+		bool current = false;
+		p->getValue( current );
+		return current != ( v > 0.5f );
+	}
+	static bool choiceDiffers( OFX::ChoiceParam* p, float v )
+	{
+		int current = 0;
+		p->getValue( current );
+		return current != int( std::lround( v ) );
+	}
+	static bool rgbDiffers( OFX::RGBParam* p, float r, float g, float b )
+	{
+		double cr = 0.0, cg = 0.0, cb = 0.0;
+		p->getValue( cr, cg, cb );
+		return std::fabs( cr - double( r ) ) > 1e-4 || std::fabs( cg - double( g ) ) > 1e-4
+			   || std::fabs( cb - double( b ) ) > 1e-4;
+	}
+	static void setDouble( OFX::DoubleParam* p, float v )
+	{
+		if( doubleDiffers( p, v ) )
+			p->setValue( double( v ) );
+	}
+	static void setBool( OFX::BooleanParam* p, float v )
+	{
+		if( boolDiffers( p, v ) )
+			p->setValue( v > 0.5f );
+	}
+	static void setChoice( OFX::ChoiceParam* p, float v )
+	{
+		if( choiceDiffers( p, v ) )
+			p->setValue( int( std::lround( v ) ) );
+	}
+	static void setRGB( OFX::RGBParam* p, float r, float g, float b )
+	{
+		if( rgbDiffers( p, r, g, b ) )
+			p->setValue( double( r ), double( g ), double( b ) );
+	}
+
+	/// True while our own setValues are in flight, so the resulting
+	/// changedParam callbacks are not mistaken for the operator editing.
+	bool applyingPreset = false;
 };
 
 OFX::DoubleParamDescriptor* defineSlider( OFX::ImageEffectDescriptor& desc, OFX::PageParamDescriptor* page,
@@ -607,6 +731,21 @@ void AsciifyPluginFactory::describeInContext( OFX::ImageEffectDescriptor& desc, 
 	dstClip->setSupportsTiles( false );
 
 	OFX::PageParamDescriptor* page = desc.definePageParam( "Controls" );
+
+	// Factory presets, from the same table the FFGL build reads (Presets.h).
+	// Custom is not a preset: it means the sliders are the truth.
+	OFX::ChoiceParamDescriptor* presetParam = desc.defineChoiceParam( kParamPreset );
+	presetParam->setLabels( "Preset", "Preset", "Preset" );
+	presetParam->setHint( "Named typesetting looks. Picking one sets the covered controls; "
+	                      "editing any of them afterwards falls back to Custom." );
+	presetParam->appendOption( "Custom" );
+	for( int i = 0; i < asciify::presets::kCount; ++i )
+		presetParam->appendOption( asciify::presets::kPresets[ i ].name );
+	presetParam->setDefault( 0 );
+	presetParam->setIsPersistant( true );
+	presetParam->setEvaluateOnChange( false );//the copied values re-render; the label itself does not
+	presetParam->setAnimates( false );
+	page->addChild( *presetParam );
 
 	OFX::GroupParamDescriptor* text = desc.defineGroupParam( "Text" );
 	text->setLabels( "Text", "Text", "Text" );

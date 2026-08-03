@@ -88,6 +88,8 @@ Asciify::Asciify()
 	params[ PT_EDGE ] = 0.0f;//crisp
 	params[ PT_MIX ]  = 1.0f;
 
+	params[ PT_PRESET ] = 0.0f;//Custom: the sliders are the truth
+
 	customText = "@%#*+=-:. ";
 
 	//---------------------------------------------------------------------
@@ -136,6 +138,15 @@ Asciify::Asciify()
 
 	SetParamInfof( PT_MIX, "Mix", FF_TYPE_STANDARD );
 
+	// Factory presets. Element 0 is Custom; picking anything else copies that
+	// preset's values into the covered parameters and raises value events so
+	// the host re-reads the sliders. Editing a covered slider flips back to
+	// Custom.
+	SetOptionParamInfo( PT_PRESET, "Preset", 1 + asciify::presets::kCount, params[ PT_PRESET ] );
+	SetParamElementInfo( PT_PRESET, 0, "Custom", 0.0f );
+	for( int i = 0; i < asciify::presets::kCount; ++i )
+		SetParamElementInfo( PT_PRESET, 1 + i, asciify::presets::kPresets[ i ].name, static_cast< float >( 1 + i ) );
+
 	//Eighteen parameters is well past the point where an ungrouped list in
 	//somebody else's inspector stops being readable.
 	SetParamGroup( PT_COLUMNS, "Type" );
@@ -158,6 +169,8 @@ Asciify::Asciify()
 
 	SetParamGroup( PT_EDGE, "Output" );
 	SetParamGroup( PT_MIX, "Output" );
+
+	SetParamGroup( PT_PRESET, "Preset" );
 
 	FFGLLog::LogToHost( "Created Asciify effect" );
 
@@ -534,6 +547,14 @@ FFResult Asciify::SetFloatParameter( unsigned int index, float value )
 	if( index >= PT_COUNT )
 		return FF_FAIL;
 
+	if( index == PT_PRESET )
+	{
+		const int chosen = static_cast< int >( std::lround( value ) );
+		if( chosen != static_cast< int >( std::lround( params[ PT_PRESET ] ) ) )
+			applyPreset( chosen );
+		return FF_SUCCESS;
+	}
+
 	//Deliberately not logged. A parameter change is not a diagnostic event: the
 	//host already shows the value, and an operator animating a slider would put
 	//a line in the log every frame. The log exists for the shader that will not
@@ -541,9 +562,53 @@ FFResult Asciify::SetFloatParameter( unsigned int index, float value )
 	if( index == PT_SET && value != params[ index ] )
 		alphabetDirty = true;
 
-	params[ index ] = value;
+	// A slider moved while a preset is active means the operator has taken
+	// over: the dropdown falls back to Custom. The equality guard matters —
+	// hosts that honour the value events echo the preset's own values straight
+	// back through here, and that echo must not un-set the preset.
+	const float previous = params[ index ];
+	params[ index ]      = value;
+
+	const int active = static_cast< int >( std::lround( params[ PT_PRESET ] ) );
+	if( active > 0 && std::fabs( value - previous ) > 1e-4f )
+	{
+		for( unsigned int id : kPresetParamIDs )
+		{
+			if( id == index )
+			{
+				params[ PT_PRESET ] = 0.0f;
+				RaiseParamEvent( PT_PRESET, FF_EVENT_FLAG_VALUE );
+				break;
+			}
+		}
+	}
 
 	return FF_SUCCESS;
+}
+
+void Asciify::applyPreset( int presetIndex )
+{
+	params[ PT_PRESET ] = static_cast< float >( presetIndex );
+
+	if( presetIndex <= 0 || presetIndex > asciify::presets::kCount )
+		return;//Custom: the sliders keep whatever they said
+
+	const asciify::presets::Preset& preset = asciify::presets::kPresets[ presetIndex - 1 ];
+	for( int j = 0; j < asciify::presets::kParamCount; ++j )
+	{
+		const unsigned int id = kPresetParamIDs[ j ];
+		if( std::fabs( params[ id ] - preset.v[ j ] ) <= 1e-6f )
+			continue;
+
+		if( id == PT_SET )
+			alphabetDirty = true;
+
+		// The copy is what changes the picture; the event only tells the host
+		// to re-read the slider. A host that ignores it renders the preset
+		// correctly and merely shows stale knobs.
+		params[ id ] = preset.v[ j ];
+		RaiseParamEvent( id, FF_EVENT_FLAG_VALUE );
+	}
 }
 
 float Asciify::GetFloatParameter( unsigned int index )

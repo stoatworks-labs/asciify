@@ -3,6 +3,7 @@
 #include "Alphabet.h"
 #include "Match.h"
 #include "PassBuffer.h"
+#include "Presets.h"
 
 #include <FFGLSDK.h>
 
@@ -87,10 +88,26 @@ public:
 		PT_EDGE,
 		PT_MIX,
 
+		//Preset. Declared after the real controls so their IDs — which a saved
+		//composition refers to — do not shift under existing users.
+		PT_PRESET,
+
 		PT_COUNT
 	};
 
 private:
+	/// The ParamID each presets::Param drives, in presets::Param order. The
+	/// preset table stays host-agnostic; this is the FFGL binding of it.
+	static constexpr unsigned int kPresetParamIDs[ asciify::presets::kParamCount ] = {
+		PT_COLUMNS, PT_SET, PT_STRUCTURE, PT_TONE, PT_CONTRAST, PT_INVERT, PT_DITHER,
+		PT_TINT, PT_INK_R, PT_INK_G, PT_INK_B, PT_PAPER_R, PT_PAPER_G, PT_PAPER_B,
+		PT_PAPER_OPACITY, PT_EDGE
+	};
+
+	/// Copy a factory preset's values into params[] and raise value events so
+	/// the host re-reads the sliders. `presetIndex` is 1-based; 0 is Custom.
+	void applyPreset( int presetIndex );
+
 	/// Re-measure the alphabet and upload it. Called when the character set or
 	/// the custom string changes -- not per frame: the measurement is over a
 	/// hundred glyphs and does not depend on the picture.
