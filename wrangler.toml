@@ -1,0 +1,36 @@
+# Cloudflare deployment for the Asciify browser demo.
+#
+# A static-assets-only Worker, the shape the rest of the fleet uses. Cloudflare
+# Pages is NOT in the path: `pages_build_output_dir` here would fail with "Could
+# not detect a directory containing static files", which reads like a missing
+# build step but is actually the wrong config key.
+#
+# There is **no build command**. The demo is hand-written ES modules and its
+# shared kit is vendored into `demo/vendor/` by
+# `stoatworks-backend/resolume-demo/sync.sh`, so what is committed is what is
+# served. Deploy with:
+#
+#   cf-run npx wrangler deploy
+#
+# `demo/_headers` carries the CSP and is honoured by the assets runtime. There is
+# deliberately no `_redirects`: the Pages way to route an SPA is a
+# `/*  /index.html  200` line there and the assets runtime rejects it as an
+# infinite loop, failing the whole deploy. This is a single page, so it needs
+# neither.
+#
+# ☠️ Pushing ANY branch to this repo can trigger a Workers Build that deploys to
+# PRODUCTION — Cloudflare does not treat a non-default branch as a preview here.
+# Recover with `cf-run npx wrangler deploy`, and verify by CONTENT: a wrong page
+# still answers 200.
+
+name = "asciify-demo"
+compatibility_date = "2026-08-03"
+
+[assets]
+directory = "./demo"
+
+# Attached here rather than by hand in the dashboard, so the hostname is part of
+# the repo and a fresh deploy cannot come up without it.
+[[routes]]
+pattern = "asciify-demo.stoatworks-labs.com"
+custom_domain = true

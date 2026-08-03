@@ -1,0 +1,5 @@
+# Files in demo/ that document or generate the demo but must not be served.
+# Wrangler uploads everything in the assets directory otherwise — including the
+# extractor scripts, which would end up on a public URL.
+README.md
+tools/

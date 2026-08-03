@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Asciify — browser demo | Stoatworks Labs</title>
+    <meta name="description" content="Try the Asciify character-renderer FFGL plugin for Resolume in your browser. The plugin's own three-pass shader and its drawn font, ported to WebGL2." />
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="./vendor/kit.css" />
+    <link rel="canonical" href="https://asciify-demo.stoatworks-labs.com/" />
+  </head>
+  <body>
+    <main id="demo">
+      <noscript>
+        <p>
+          This demo runs the plugin's shader in your browser, so it needs
+          JavaScript and WebGL2. The plugin itself, its source and its downloads
+          are on
+          <a href="https://stoatworks-labs.com/software/asciify/">its project page</a>.
+        </p>
+      </noscript>
+    </main>
+
+    <script type="module" src="./plugin.js"></script>
+    <script
+      src="./vendor/support-footer.js"
+      defer
+      data-app="Asciify"
+      data-repo="https://github.com/stoatworks-labs/asciify"
+      data-note="A browser demo of the plugin's shader. Nothing you load here leaves your machine."
+    ></script>
+  </body>
+</html>

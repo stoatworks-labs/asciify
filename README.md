@@ -87,6 +87,23 @@ cell, so it is MIT along with everything else and there is nothing vendored:
 
 <!-- downloads:start -->
 
+## Try it in your browser
+
+**<https://asciify-demo.stoatworks-labs.com>**
+
+Not the plugin — the GLSL from `source/Shaders.cpp`, copied across unedited and run in
+WebGL2 over clips generated in the page, with the parameters this plugin's
+constructor declares and the conversions its own code applies. No install, and
+nothing you load leaves your machine.
+
+The font is extracted from `source/FontData.cpp` rather than redrawn, so the ramp on the page is this font's own measured order. Drag Structure to zero and it collapses into exactly that ramp, with no separate code path.
+
+It is a port, so it is not evidence about the plugin: a browser is not Resolume,
+GLSL ES 3.00 is not desktop GL 4.1 core, and nothing on that page measures
+anything. The page says all of that itself, in a disclosure at the foot. The
+numbers worth trusting are in [Status](#status) and come from the offline
+harness in this repository.
+
 ## Download
 
 **[v0.1.0](https://github.com/stoatworks-labs/asciify/releases/tag/v0.1.0)** — prebuilt for macOS and Windows. Pick your platform:

@@ -229,3 +229,42 @@ the other two FFGL effects in the fleet. `PassBuffer` is old-cathode's, with the
 sampling mode added. The `--pipe` frame format and the `--script` automation file
 are identical across all three on purpose, so one build script can film any of
 them.
+
+
+## The browser demo
+
+`demo/` is a static page at **asciify-demo.stoatworks-labs.com**: this
+plugin's own GLSL, ported to WebGL2, running on clips generated in the page with
+the parameters the constructor declares. It is deployed as a Cloudflare Worker
+serving `demo/` as static assets (`wrangler.toml`), with **no build step** — what
+is committed is what is served.
+
+Three things about it are not visible from the files:
+
+- **`demo/plugin.js` carries a second copy of the shader.** The demo cannot
+  include a C++ file, so the GLSL from `source/Shaders.cpp` is duplicated there and
+  *nothing enforces that they agree*. Change the shader and change both, or the
+  page quietly goes on rendering the old maths.
+- **`demo/vendor/` is vendored, not authored here.** The master is
+  `stoatworks-backend/resolume-demo/`; fix it there and re-run its `sync.sh`.
+  `sync.sh --check` reports drift. A fix applied to the copy fixes one plugin out
+  of six.
+- **Verify a deploy by content, never by status code.** A wrong page still
+  answers 200.
+
+```bash
+cf-run npx wrangler deploy
+curl -s 'https://asciify-demo.stoatworks-labs.com/?cb=1' | grep -o '<title>[^<]*'
+```
+
+`demo/font.js` is generated from `source/FontData.cpp` by
+`demo/tools/extract_font.py`. Run it after any change to the font, and
+`--check` to prove the copy is current. It is extracted rather than
+retyped for the reason the font header gives: the alphabet's ordering is
+*measured* off the bitmaps, so a drifted glyph silently reorders the ramp
+rather than looking wrong.
+
+The page is emphatic that it is not the plugin, and lists what it does not
+reproduce in a disclosure at the foot. Keep that: it is a port, so nothing on it
+is evidence about the plugin, and the offline harness in this repository is
+still the only thing that measures anything.
