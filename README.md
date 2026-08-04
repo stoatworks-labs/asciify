@@ -268,6 +268,10 @@ It records which of the three passes failed, and the GL vendor, renderer and
 version next to it. No crash handler — a plugin has no business deciding what
 happens when Resolume dies.
 
+<!-- attributions:start -->
+This project is built on other people's work — see [ATTRIBUTIONS.md](ATTRIBUTIONS.md).
+<!-- attributions:end -->
+
 ## Licence
 
 MIT. See [LICENSE](LICENSE). The font in `source/FontData.cpp` was drawn for this
