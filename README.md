@@ -113,9 +113,9 @@ harness in this repository.
 
 | Build | Download | Size |
 | --- | --- | --- |
-| Universal (Apple Silicon + Intel) · .dmg disk image | [`asciify-0.2.0-macos-universal.dmg`](https://github.com/stoatworks-labs/asciify/releases/download/v0.2.0/asciify-0.2.0-macos-universal.dmg) | 210 KB |
-| Universal (Apple Silicon + Intel) · .zip archive | [`asciify-macos-universal.zip`](https://github.com/stoatworks-labs/asciify/releases/latest/download/asciify-macos-universal.zip) | 165 KB |
-| Universal (Apple Silicon + Intel) · .zip archive (OpenFX — Resolve, Vegas, Nuke) | [`asciify-ofx-macos-universal.zip`](https://github.com/stoatworks-labs/asciify/releases/latest/download/asciify-ofx-macos-universal.zip) | 234 KB |
+| Universal (Apple Silicon + Intel) · .dmg disk image | [`asciify-0.2.0-macos-universal.dmg`](https://github.com/stoatworks-labs/asciify/releases/download/v0.2.0/asciify-0.2.0-macos-universal.dmg) | 230 KB |
+| Universal (Apple Silicon + Intel) · .zip archive | [`asciify-macos-universal.zip`](https://github.com/stoatworks-labs/asciify/releases/latest/download/asciify-macos-universal.zip) | 181 KB |
+| Universal (Apple Silicon + Intel) · .zip archive (OpenFX — Resolve, Vegas, Nuke) | [`asciify-ofx-macos-universal.zip`](https://github.com/stoatworks-labs/asciify/releases/latest/download/asciify-ofx-macos-universal.zip) | 246 KB |
 
 </details>
 
