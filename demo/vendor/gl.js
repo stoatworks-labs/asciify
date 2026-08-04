@@ -255,17 +255,26 @@ export class Quad {
  * An off-screen colour target, the browser equivalent of the plugins'
  * PassBuffer / ScopeBuffer. `ensure()` reallocates only on a real size or
  * format change, as theirs does.
+ *
+ * `depth: true` attaches a DEPTH_COMPONENT24 renderbuffer as well. Idler is the
+ * only plugin in the fleet that needs one and it is not optional there: six of
+ * its savers are perspective 3D with self-overlapping geometry, and a depth test
+ * needs a depth buffer. Without it the triangles land in index order, which for
+ * 3D Pipes is a plausible-looking tangle with the far segments drawn over the
+ * near ones — wrong in exactly the way that is hard to see in a screenshot.
  */
 export class PassBuffer {
-  constructor(gl, { filter = 'linear', mip = false } = {}) {
+  constructor(gl, { filter = 'linear', mip = false, depth = false } = {}) {
     this.gl = gl;
     this.filter = filter;
     this.mip = mip;
+    this.depth = depth;
     this.width = 0;
     this.height = 0;
     this.internalFormat = null;
     this.texture = null;
     this.fbo = null;
+    this.depthBuffer = null;
   }
 
   ensure(width, height, internalFormat = null) {
@@ -301,6 +310,14 @@ export class PassBuffer {
     gl.bindFramebuffer(gl.FRAMEBUFFER, this.fbo);
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.texture, 0);
 
+    if (this.depth) {
+      this.depthBuffer = gl.createRenderbuffer();
+      gl.bindRenderbuffer(gl.RENDERBUFFER, this.depthBuffer);
+      gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT24, width, height);
+      gl.bindRenderbuffer(gl.RENDERBUFFER, null);
+      gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, this.depthBuffer);
+    }
+
     const status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.bindTexture(gl.TEXTURE_2D, null);
@@ -324,7 +341,17 @@ export class PassBuffer {
     this.bind();
     gl.disable(gl.BLEND);
     gl.clearColor(r, g, b, a);
-    gl.clear(gl.COLOR_BUFFER_BIT);
+    // The depth clear has to be in the same call as the colour one, and the
+    // depth WRITE mask has to be on for it to happen at all — a target left with
+    // depthMask(false) from the previous frame's blended pass silently keeps the
+    // old depth and the second frame renders against stale occlusion.
+    if (this.depth) {
+      gl.depthMask(true);
+      gl.clearDepth(1.0);
+      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    } else {
+      gl.clear(gl.COLOR_BUFFER_BIT);
+    }
     return this;
   }
 
@@ -339,8 +366,13 @@ export class PassBuffer {
   dispose() {
     const gl = this.gl;
     if (this.fbo) gl.deleteFramebuffer(this.fbo);
+    if (this.depthBuffer) gl.deleteRenderbuffer(this.depthBuffer);
+    // Delete the colour texture too. This is the bug Idler's own Target.cpp
+    // exists to avoid: the FFGL SDK's FBO::Release() tests depthBufferID twice
+    // and leaks the colour texture on every reallocation.
     if (this.texture) gl.deleteTexture(this.texture);
     this.fbo = null;
+    this.depthBuffer = null;
     this.texture = null;
     this.width = 0;
     this.height = 0;
