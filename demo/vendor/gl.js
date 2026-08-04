@@ -38,9 +38,16 @@ export function port(source, { stage = 'fragment' } = {}) {
   // highp for int wherever a hash is being done in integers — old-cathode and
   // downpour both depend on 32-bit uint wraparound, which mediump would not
   // give.
+  //
+  // The integer samplers have no default precision at all in ES 3.00 — unlike
+  // sampler2D, which at least has one in the fragment stage — so a shader that
+  // reads a usampler2D fails to compile with "No precision specified" and
+  // nothing else. Desktop GL needs none of this, which is why the plugins'
+  // sources carry none. coinop reads its playfield through a usampler2D.
   const precision =
     stage === 'fragment'
       ? 'precision highp float;\nprecision highp int;\nprecision highp sampler2D;\n'
+        + 'precision highp usampler2D;\nprecision highp isampler2D;\n'
       : 'precision highp float;\nprecision highp int;\n';
 
   // `float[]( a, b )` -> `float[N]( a, b )`. Both spellings are legal in
@@ -173,11 +180,20 @@ export class Program {
     return this.setInt(name, unit);
   }
 
-  /** A whole `uniform float name[N]` or `uniform vec3 name[N]` at once. */
+  /**
+   * A whole `uniform float name[N]`, `uniform vec3 name[N]` or
+   * `uniform vec4 name[N]` at once.
+   *
+   * `components` has to be passed and has to be right: glUniform1fv on a vec4
+   * array is rejected as a size mismatch, and the uniform keeps whatever it held
+   * before — which for orrery's instance arrays is every shape at the origin at
+   * zero size, i.e. a plugin that draws nothing and looks like it is off-screen.
+   */
   setArray(name, values, components = 1) {
     const loc = this.location(`${name}[0]`) ?? this.location(name);
     if (loc === null) { this.missing.add(name); return this; }
-    if (components === 3) this.gl.uniform3fv(loc, values);
+    if (components === 4) this.gl.uniform4fv(loc, values);
+    else if (components === 3) this.gl.uniform3fv(loc, values);
     else this.gl.uniform1fv(loc, values);
     return this;
   }
