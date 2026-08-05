@@ -14,6 +14,15 @@ FROM nginx:1.27-alpine
 # add_header lines globally instead of per-location and defeat the point.
 RUN mkdir -p /etc/nginx/snippets
 
+# Extend the MIME map rather than replacing it. nginx 1.27's mime.types already
+# maps .wasm but still has no .mjs, and the obvious fix — a `types { }` block in
+# the server config — REPLACES the inherited map instead of adding to it, which
+# silently demotes every .css and .js to application/octet-stream. Appending to
+# the file itself is the only form that adds. The `nginx -t` below is what
+# catches it if this sed ever stops matching.
+RUN sed -i 's|^}$|    text/javascript                        mjs;\n}|' /etc/nginx/mime.types \
+    && grep -q 'mjs;' /etc/nginx/mime.types
+
 COPY docker/stoatworks-headers.conf /etc/nginx/snippets/stoatworks-headers.conf
 COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
 
