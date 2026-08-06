@@ -31,6 +31,55 @@ const BACKDROPS = [
   { id: 'white', name: 'White' },
 ];
 
+/**
+ * `?clip=<id>` — which generated clip to run. Ignored if the plugin does not
+ * list it, because a demo's `sources` is a statement about what suits that
+ * plugin, not a menu the URL may override.
+ */
+function pickSource(demo, query) {
+  const wanted = query.get('clip');
+  return wanted && demo.sources.includes(wanted) ? wanted : demo.sources[0];
+}
+
+/**
+ * `?size=1920x1080`, or one of the preset ids. Free-form rather than a preset
+ * list because an embed is sized by whatever is consuming it, and an OBS
+ * browser source is routinely a raster no menu here would have guessed.
+ *
+ * Embeds default to 1280x720 rather than the page's 960x540: this is a video
+ * source, and the page's default is chosen to sit beside an inspector.
+ */
+function pickResolution(query, embed) {
+  const wanted = query.get('size');
+  if (wanted) {
+    const preset = RESOLUTIONS.find((r) => r.id === wanted);
+    if (preset) return preset;
+
+    const match = /^(\d{2,5})x(\d{2,5})$/.exec(wanted);
+    if (match) {
+      const width = Number(match[1]);
+      const height = Number(match[2]);
+      // A canvas larger than the GPU will allocate fails at draw time with a
+      // blank frame, which in a mixer reads as "the source is broken".
+      if (width > 0 && height > 0 && width <= 7680 && height <= 4320) {
+        return { id: wanted, name: `${width} × ${height}`, width, height };
+      }
+    }
+  }
+  return embed ? RESOLUTIONS[2] : RESOLUTIONS[1];
+}
+
+/**
+ * `?bg=checker|black|white`. Embeds default to black rather than the
+ * checkerboard: the checker exists to make alpha legible to a reader, and
+ * baking it into a video source would be a bug.
+ */
+function pickBackdrop(query, embed) {
+  const wanted = query.get('bg');
+  if (BACKDROPS.some((b) => b.id === wanted)) return wanted;
+  return embed ? 'black' : 'checker';
+}
+
 function el(tag, className, text) {
   const node = document.createElement(tag);
   if (className) node.className = className;
@@ -58,11 +107,32 @@ export function mountDemo(demo) {
   const root = document.querySelector('#demo');
   root.innerHTML = '';
 
+  const query = new URLSearchParams(window.location.search);
+
+  // ---- embed mode ---------------------------------------------------------
+  //
+  // `?embed=1` renders the output and nothing else: no banner, no inspector,
+  // no transport, no footer, canvas filling the viewport. It exists so the
+  // render can be a *video source* — an OBS browser source, a WebLinked URL —
+  // rather than a page someone reads.
+  //
+  // **This is a deliberate exception to the rule at the top of this file**,
+  // that the page always says it is a demo. That rule protects a reader from
+  // mistaking the demo for the plugin, and in embed mode there is no reader:
+  // the output is a texture in somebody's mixer. What survives is everything a
+  // reader or a crawler would actually meet — the document title, the meta
+  // description, and a visually-hidden statement in the DOM. What is removed is
+  // only the furniture that would otherwise be *burnt into the video*.
+  //
+  // Do not "fix" this by putting a watermark back. A caption baked into a live
+  // output is not a disclosure, it is a defect in somebody's show.
+  const embed = query.has('embed') && query.get('embed') !== '0';
+
   const params = new Params(demo.params);
   const state = {
-    sourceId: demo.sources[0],
-    resolution: RESOLUTIONS[1],
-    backdrop: 'checker',
+    sourceId: pickSource(demo, query),
+    resolution: pickResolution(query, embed),
+    backdrop: pickBackdrop(query, embed),
     playing: true,
     time: 0,
     lastFrame: 0,
@@ -75,9 +145,6 @@ export function mountDemo(demo) {
     variant: demo.variants?.default ?? null,
   };
 
-  root.append(buildHeader(demo));
-
-  const stage = el('div', 'stage');
   const canvasWrap = el('div', 'stage__canvas');
   const canvas = el('canvas', 'stage__gl');
   canvasWrap.append(canvas);
@@ -85,20 +152,45 @@ export function mountDemo(demo) {
   const status = el('p', 'stage__status');
   status.hidden = true;
 
-  const transport = buildTransport(demo, state, params, () => request());
-  stage.append(canvasWrap, transport, status);
+  let transport = null;
 
-  const inspector = el('aside', 'inspector');
-  inspector.append(buildInspectorHead(demo, params));
-  const panelBody = el('div', 'inspector__body');
-  inspector.append(panelBody);
+  if (embed) {
+    // `data-embed` on <body>, not on #demo: the support footer is injected as a
+    // sibling of #demo by a separate script, so the only rule that reliably
+    // catches it hides body's other children. Setting it here rather than in
+    // the page keeps every repo's index.html identical.
+    document.body.dataset.embed = '';
 
-  const layout = el('div', 'layout');
-  layout.append(stage, inspector);
-  root.append(layout);
-  root.append(buildDifferences(demo));
+    // The disclosure a reader or a crawler still meets. Not decoration: it is
+    // what makes removing the banner defensible.
+    const hidden = el(
+      'p',
+      'visually-hidden',
+      `${demo.name}: a browser demo of an FFGL plugin's own shader, ported to WebGL2. This is not the plugin.`,
+    );
+    root.append(hidden, canvasWrap, status);
 
-  buildPanel(params, panelBody);
+    // The inspector normally does this on the way to building its panel.
+    params.fromQuery(query);
+  } else {
+    root.append(buildHeader(demo));
+
+    const stage = el('div', 'stage');
+    transport = buildTransport(demo, state, params, () => request());
+    stage.append(canvasWrap, transport, status);
+
+    const inspector = el('aside', 'inspector');
+    inspector.append(buildInspectorHead(demo, params));
+    const panelBody = el('div', 'inspector__body');
+    inspector.append(panelBody);
+
+    const layout = el('div', 'layout');
+    layout.append(stage, inspector);
+    root.append(layout);
+    root.append(buildDifferences(demo));
+
+    buildPanel(params, panelBody);
+  }
 
   // ---- GL -----------------------------------------------------------------
   let gl;
@@ -194,14 +286,14 @@ export function mountDemo(demo) {
 
   params.addEventListener('change', () => { if (!state.playing) request(); });
 
-  transport.addEventListener('demo:state', () => {
+  transport?.addEventListener('demo:state', () => {
     canvasWrap.dataset.backdrop = demo.showBackdrop ? state.backdrop : 'black';
     request();
   });
 
   // A still or a video the visitor picked. It is decoded here and uploaded to a
   // texture; it never goes near a network.
-  transport.addEventListener('demo:adopt', async (event) => {
+  transport?.addEventListener('demo:adopt', async (event) => {
     try {
       const [width, height] = await sources.adopt(event.detail);
       state.sourceId = 'user';
