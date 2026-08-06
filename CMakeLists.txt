@@ -140,6 +140,21 @@ endif()
 # Links the font, alphabet, matching and controls straight from source: the
 # idea has one home, only the GPU passes are mirrored on the CPU.
 # ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# The FxPlug 4 build, for Final Cut Pro and Motion (macOS only, and only where
+# Apple's SDK is installed - a login-gated download that cannot be vendored, so
+# this is OFF by default and CI cannot build it).
+# Pattern doc: resolume-luma-keyer/docs/FXPLUG-PORT.md
+# ---------------------------------------------------------------------------
+option(BUILD_FXPLUG "Build the FxPlug plugin for Final Cut Pro and Motion" OFF)
+
+if(BUILD_FXPLUG)
+    if(NOT APPLE)
+        message(FATAL_ERROR "BUILD_FXPLUG is macOS only.")
+    endif()
+    add_subdirectory(fxplug)
+endif()
+
 option(BUILD_OFX "Build the OpenFX plugin" ON)
 
 if(BUILD_OFX)

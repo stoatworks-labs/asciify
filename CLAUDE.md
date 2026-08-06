@@ -28,6 +28,30 @@ Read `AGENTS.md` before changing the matching maths or the font.
   `../resolume-ofx-bridge/build/ofxprobe --dir build --render com.stoatworks.asciify --size 640x360 --out /tmp/a.bmp`
 - Install for Resolve: copy the bundle into `/Library/OFX/Plugins`.
 
+## Final Cut Pro / Motion build (fxplug/)
+- Apple's FxPlug 4. **Pattern doc: `resolume-luma-keyer/docs/FXPLUG-PORT.md`** —
+  read it before changing anything structural; it holds the fleet UUID registry
+  and the trap list.
+- Needs Apple's SDK at `/Library/Developer/SDKs/FxPlug.sdk` (login-gated, **not
+  redistributable — CI cannot build this**). Off by default:
+  `cmake -B build-fxplug -DBUILD_FXPLUG=ON -DCMAKE_BUILD_TYPE=Release && cmake --build build-fxplug`
+- Sign (**mandatory** — an unsigned FxPlug plugin does not load):
+  `./fxplug/sign.sh "build-fxplug/Stoatworks Asciify.app"`
+- Install: copy the .app to /Applications **and launch it once**. Copying alone
+  does not register it, and neither reliably does `pluginkit -a`.
+- Host-free render test: `cmake --build build-fxplug --target asciify-tiletest &&
+  ./build-fxplug/fxplug/asciify-tiletest`
+- Both phases live in `fxplug/AsciifyTile.h` so they can run without a host. The
+  cell grid is rebuilt every render rather than carried in pluginState — it
+  depends on the source pixels, which pluginState never sees.
+- A cell spans many source pixels, so this declares
+  `kFxPropertyKey_NeedsFullBuffer` and `-sourceTileRect:` returns the WHOLE
+  source image. Output is placed by position in the full image, guarded by
+  `testTiledMatchesWhole`.
+- The custom alphabet crosses to the render threads in a **fixed-size char
+  array** (`kMaxCustomSet`), because pluginState is raw bytes and cannot carry a
+  std::string. Over-long input truncates rather than overruns.
+
 ## Verify
 - Everything: `tools/verify.sh`
 - GLSL vs C++ matching maths: `./build/asctest --match`

@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
+	<key>CFBundleDisplayName</key>
+	<string>Asciify</string>
+	<key>CFBundleExecutable</key>
+	<string>Asciify</string>
+	<key>CFBundleIdentifier</key>
+	<string>com.stoatworks.asciify.fxplug</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>Asciify</string>
+	<key>CFBundlePackageType</key>
+	<string>XPC!</string>
+	<key>CFBundleShortVersionString</key>
+	<string>@PROJECT_VERSION@</string>
+	<key>CFBundleVersion</key>
+	<string>@PROJECT_VERSION@</string>
+	<key>NSHumanReadableCopyright</key>
+	<string>Stoatworks Labs. MIT licensed.</string>
+
+	<!-- PlugInKit is how the service is discovered: `pluginkit -m -p FxPlug`
+	     lists it once the containing app has been registered. -->
+	<key>PlugInKit</key>
+	<dict>
+		<key>Attributes</key>
+		<dict>
+			<key>com.apple.protocol</key>
+			<string>FxPlug</string>
+			<key>com.apple.version</key>
+			<string>1.1</string>
+		</dict>
+		<key>PrincipalClass</key>
+		<string>FxPrincipal</string>
+		<key>Protocol</key>
+		<string>PROXPCProtocol</string>
+		<key>Subsystems</key>
+		<array>
+			<string>NSViewService_PKSubsystem</string>
+		</array>
+	</dict>
+
+	<key>ProPlugDictionaryVersion</key>
+	<string>1.0</string>
+	<key>ProPlugDynamicRegistration</key>
+	<false/>
+
+	<!-- The UUIDs below are PERMANENT IDENTITY. Final Cut Pro and Motion refer
+	     to an effect in a saved project by its UUID, so changing one detaches
+	     every existing use of the effect. They are generated once, recorded in
+	     docs/FXPLUG-PORT.md, and never regenerated - not on a rename, not on a
+	     version bump, not when copying this file to the next plugin. -->
+	<key>ProPlugPlugInGroupList</key>
+	<array>
+		<dict>
+			<key>groupName</key>
+			<string>Stoatworks</string>
+			<key>uuid</key>
+			<string>644CD859-14B1-4916-BC95-9E9588A611C3</string>
+		</dict>
+	</array>
+	<key>ProPlugPlugInList</key>
+	<array>
+		<dict>
+			<key>className</key>
+			<string>AsciifyPlugIn</string>
+			<key>displayName</key>
+			<string>Asciify</string>
+			<key>group</key>
+			<string>644CD859-14B1-4916-BC95-9E9588A611C3</string>
+			<key>infoString</key>
+			<string>Retypes the picture as ASCII art, choosing each character by the shape of the picture under it.</string>
+			<key>protocolNames</key>
+			<array>
+				<string>FxFilter</string>
+			</array>
+			<key>uuid</key>
+			<string>7AE6E299-34C8-4DF7-AF99-C5A7CE8E1307</string>
+			<key>version</key>
+			<string>1.0</string>
+		</dict>
+	</array>
+
+	<key>XPCService</key>
+	<dict>
+		<key>ServiceType</key>
+		<string>Application</string>
+		<key>JoinExistingSession</key>
+		<true/>
+		<key>RunLoopType</key>
+		<string>_NSApplicationMain</string>
+		<key>_AdditionalSubServices</key>
+		<dict>
+			<key>viewbridge</key>
+			<true/>
+		</dict>
+	</dict>
+</dict>
+</plist>
