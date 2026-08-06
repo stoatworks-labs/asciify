@@ -67,7 +67,16 @@ jobs:
             cp -R "build/Asciify.bundle" "out/Asciify.bundle"
             # Sanity-check the bundle really is universal and exports plugMain.
             lipo -archs "out/Asciify.bundle/Contents/MacOS/Asciify"
-            nm -gU "out/Asciify.bundle/Contents/MacOS/Asciify" | grep -q "_plugMain"
+            # Actions runs `shell: bash` as `bash -eo pipefail`, so `cmd | grep -q X`
+            # FAILS when grep FINDS its match: grep exits at once, the writer takes
+            # SIGPIPE, and pipefail reports the pipeline as failed -- failing the
+            # release on a correct binary. It is output-size dependent, so it bites
+            # the biggest artefact first. Captured and matched with `case` instead.
+            __symbols=$( nm -gU "out/Asciify.bundle/Contents/MacOS/Asciify" )
+            case "$__symbols" in
+              *_plugMain*) ;;
+              *) echo "expected _plugMain, got: $__symbols"; exit 1 ;;
+            esac
           else
             cp "build/Release/Asciify.dll" "out/Asciify.dll"
           fi
