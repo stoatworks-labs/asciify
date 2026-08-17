@@ -68,15 +68,25 @@ body:
       placeholder: "d&b D80, firmware 2.14, on a flat VLAN with the laptop"
 
   - type: textarea
-    id: diagnostics
+    id: log-file
     attributes:
-      label: Diagnostics bundle
-      description: >
-        Asciify can bundle its own logs, version info and last crash into a single
-        file — that one file usually answers every question we'd otherwise have to ask
-        you one at a time. Look for a Collect Diagnostics button in the app, or run it with --collect-diagnostics.
-        Config values are redacted before the bundle is written, but do have a look
-        before attaching it: paste the contents here, or drag the file into this box.
+      label: The log file
+      description: |
+        Asciify writes a plain text log every time it runs, and it is usually the
+        difference between "it does nothing" and an answer — almost everything that
+        goes wrong in a plugin looks identical from your side, with no message
+        anywhere, and the log is where it says which thing it was and what your
+        graphics driver had to say about it.
+
+        There is no button to press and no command to run: Asciify is loaded by
+        the host, so the log is simply a file already sitting on your disk.
+
+        - **macOS** — `~/Library/Logs/asciify/asciify.YYYY-MM-DD.log`
+        - **Windows** — `%LOCALAPPDATA%\asciify\logs\asciify.YYYY-MM-DD.log`
+
+        Attach the file for the day it went wrong, or paste the last few dozen lines
+        here. Read it first if you'd rather: it's plain text, and the most identifying
+        things in it are file paths and the name of your GPU.
       render: text
 
   - type: textarea
