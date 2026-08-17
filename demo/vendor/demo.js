@@ -93,7 +93,7 @@ function el(tag, className, text) {
  * @param {string} demo.pluginId      FFGL id, e.g. "PH01"
  * @param {string} demo.tagline
  * @param {string} demo.repo          GitHub URL
- * @param {string} demo.page          stoatworks-labs.com project page
+ * @param {string} [demo.page]        stoatworks-labs.com project page, if it exists yet
  * @param {string} [demo.video]       YouTube watch URL
  * @param {string[]} demo.differences what this page does NOT reproduce
  * @param {Array} demo.params         parameter declarations (see params.js)
@@ -349,7 +349,13 @@ function buildHeader(demo) {
     if (external) { a.rel = 'noopener'; a.target = '_blank'; }
     links.append(a);
   };
-  add(demo.page, 'Project page and downloads');
+  // Guarded like `video`, and for the same reason: a plugin that has not been
+  // written up on the website yet has no project page, and an unguarded add()
+  // puts the string "undefined" in the href. Every demo before vertigo shipped
+  // with a page already live, which is why this went unnoticed — the rule the
+  // rest of the fleet follows is that a missing link is left out rather than
+  // rendered as one that 404s.
+  if (demo.page) add(demo.page, 'Project page and downloads');
   add(demo.repo, 'Source on GitHub');
   if (demo.video) add(demo.video, 'Video');
   header.append(links);
