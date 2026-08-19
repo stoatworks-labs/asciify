@@ -106,14 +106,14 @@ harness in this repository.
 
 ## Download
 
-**[v1.0.0](https://github.com/stoatworks-labs/asciify/releases/tag/v1.0.0)** — prebuilt for macOS and Windows. Pick your platform:
+**[v1.0.1](https://github.com/stoatworks-labs/asciify/releases/tag/v1.0.1)** — prebuilt for macOS and Windows. Pick your platform:
 
 <details>
 <summary><b>macOS</b> — Universal (Apple Silicon + Intel)</summary>
 
 | Build | Download | Size |
 | --- | --- | --- |
-| Universal (Apple Silicon + Intel) · .dmg disk image | [`asciify-1.0.0-macos-universal.dmg`](https://github.com/stoatworks-labs/asciify/releases/download/v1.0.0/asciify-1.0.0-macos-universal.dmg) | 232 KB |
+| Universal (Apple Silicon + Intel) · .dmg disk image | [`asciify-1.0.1-macos-universal.dmg`](https://github.com/stoatworks-labs/asciify/releases/download/v1.0.1/asciify-1.0.1-macos-universal.dmg) | 232 KB |
 | Universal (Apple Silicon + Intel) · .zip archive | [`asciify-macos-universal.zip`](https://github.com/stoatworks-labs/asciify/releases/latest/download/asciify-macos-universal.zip) | 183 KB |
 | Universal (Apple Silicon + Intel) · .zip archive (OpenFX — Resolve, Vegas, Nuke) | [`asciify-ofx-macos-universal.zip`](https://github.com/stoatworks-labs/asciify/releases/latest/download/asciify-ofx-macos-universal.zip) | 251 KB |
 
@@ -124,7 +124,7 @@ harness in this repository.
 
 | Build | Download | Size |
 | --- | --- | --- |
-| x64 · .exe installer | [`asciify-1.0.0-windows-x86_64-setup.exe`](https://github.com/stoatworks-labs/asciify/releases/download/v1.0.0/asciify-1.0.0-windows-x86_64-setup.exe) | 221 KB |
+| x64 · .exe installer | [`asciify-1.0.1-windows-x86_64-setup.exe`](https://github.com/stoatworks-labs/asciify/releases/download/v1.0.1/asciify-1.0.1-windows-x86_64-setup.exe) | 221 KB |
 | x64 · .zip archive | [`asciify-windows-x86_64.zip`](https://github.com/stoatworks-labs/asciify/releases/latest/download/asciify-windows-x86_64.zip) | 113 KB |
 | x64 · .zip archive (OpenFX — Resolve, Vegas, Nuke) | [`asciify-ofx-windows-x86_64.zip`](https://github.com/stoatworks-labs/asciify/releases/latest/download/asciify-ofx-windows-x86_64.zip) | 72 KB |
 
