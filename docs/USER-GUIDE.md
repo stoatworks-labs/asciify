@@ -41,11 +41,10 @@ browser.
 
 **Needs Resolume Arena or Avenue 7.3.1 or newer.**
 
-On macOS the build is unsigned, so Gatekeeper may quarantine it:
-
-```bash
-xattr -dr com.apple.quarantine ~/Documents/Resolume\ Arena/Extra\ Effects/Asciify.bundle
-```
+The macOS builds are **Developer ID-signed and notarised**, so the bundle simply loads — there is
+nothing to clear and no `xattr` step. The Windows builds are not code-signed, but plugin files are
+not gated the way `.exe` files are, so Resolume loads them normally; only the installer trips
+SmartScreen, once: **More info** → **Run anyway**.
 
 ### OpenFX hosts (Resolve, Vegas, Nuke, Natron)
 
@@ -194,8 +193,11 @@ version of Resolume you are on.
 
 **It shimmers when the footage moves.** Set Glyph Edge to Smooth, or use fewer columns.
 
-**macOS says the plugin is damaged, or it never appears.** Gatekeeper quarantined it — run the
-`xattr` command under [Installing](#installing) and restart Resolume.
+**The plugin never appears.** Almost always the wrong folder, or a Resolume older than 7.3.1.
+The macOS builds are signed and notarised, so quarantine is no longer the usual answer — but a
+copy downloaded before that changed may still carry it, and Resolume skips a quarantined plugin
+*silently* rather than complaining. `xattr -dr com.apple.quarantine <bundle>` settles it either
+way.
 
 ---
 
