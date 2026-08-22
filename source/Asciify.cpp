@@ -171,6 +171,18 @@ Asciify::Asciify()
 	SetParamGroup( PT_MIX, "Output" );
 
 	SetParamGroup( PT_PRESET, "Preset" );
+	// The About block. Declared inline rather than through a helper, because
+	// SetParamInfo is protected on CFFGLPlugin and nothing outside the class
+	// can call it.
+	SetParamInfo( PT_ABOUT_TEXT, "About", FF_TYPE_TEXT, stoatworks::about::defaultText() );
+	{
+		FFUInt32 aboutId = PT_ABOUT_TEXT + 1;
+		for( const auto& b : stoatworks::about::buttons() )
+			SetParamInfo( aboutId++, b.label, FF_TYPE_EVENT, false );
+	}
+	for( unsigned int id = PT_ABOUT_TEXT; id < PT_COUNT; ++id )
+		SetParamGroup( id, "About" );
+
 
 	FFGLLog::LogToHost( "Created Asciify effect" );
 
@@ -547,6 +559,12 @@ FFResult Asciify::SetFloatParameter( unsigned int index, float value )
 	if( index >= PT_COUNT )
 		return FF_FAIL;
 
+	// The About buttons open a browser and store nothing, so they are handled
+	// before any of the bookkeeping below: pressing one is not the operator
+	// editing a control.
+	if( index >= PT_ABOUT_TEXT )
+		return stoatworks::about::handleParam( index - PT_ABOUT_TEXT, value ) ? FF_SUCCESS : FF_FAIL;
+
 	if( index == PT_PRESET )
 	{
 		const int chosen = static_cast< int >( std::lround( value ) );
@@ -621,6 +639,13 @@ float Asciify::GetFloatParameter( unsigned int index )
 
 FFResult Asciify::SetTextParameter( unsigned int index, const char* value )
 {
+	// Display-only, and it MUST still succeed: instantiateGL pushes every
+	// declared default back through the setters on a fresh instance and deletes
+	// the instance if one fails, so failing here means no real host can load
+	// the plugin -- while every offline harness here carries on passing.
+	if( index == PT_ABOUT_TEXT )
+		return FF_SUCCESS;
+
 	if( index != PT_CUSTOM )
 		return FF_FAIL;
 
@@ -639,6 +664,16 @@ FFResult Asciify::SetTextParameter( unsigned int index, const char* value )
 
 char* Asciify::GetTextParameter( unsigned int index )
 {
+	if( index == PT_ABOUT_TEXT )
+	{
+		// Function-local rather than a member: the line is built from
+		// compile-time facts, so it is the same for every instance, and the
+		// host only needs the pointer to outlive the call. Answered before the
+		// lock below -- it shares no state with Custom Set.
+		static const std::string aboutLine = stoatworks::about::textParam( 0 );
+		return const_cast< char* >( aboutLine.c_str() );
+	}
+
 	if( index != PT_CUSTOM )
 		return nullptr;
 

@@ -7,6 +7,9 @@
 
 #include <FFGLSDK.h>
 
+// After FFGLSDK.h, which is where FFUInt32 comes from.
+#include "StoatworksAboutParams.h"
+
 #include <mutex>
 #include <string>
 #include <vector>
@@ -92,8 +95,35 @@ public:
 		//composition refers to — do not shift under existing users.
 		PT_PRESET,
 
+		// -- The Stoatworks About block ------------------------------------------
+		//
+		// One display-only text line, then one button per link the block carries:
+		// the guide, the project page, the source, the funding page. A button opens
+		// a browser and stores nothing.
+		//
+		// How many buttons there are is decided by which URLs StoatworksAbout.h
+		// actually holds, so Asciify.cpp static_asserts this run against
+		// `about::kParamCount` -- writing a user guide later adds one, and without
+		// the assert that would silently shift PT_COUNT and leave the last button
+		// undeclared.
+		//
+		// Last in the enum so no saved composition's parameter ids shift.
+		PT_ABOUT_TEXT,
+			PT_ABOUT_BUTTON_1,
+			PT_ABOUT_BUTTON_2,
+			PT_ABOUT_BUTTON_3,
+			PT_ABOUT_BUTTON_4,
 		PT_COUNT
 	};
+
+	// The buttons are declared one per link, so the run above and the run the
+	// block actually has must agree. They diverge the day somebody writes a
+	// user guide, and this is what says so. In the header, beside the enum,
+	// because a namespace-scope assert in the .cpp cannot name a class-scoped
+	// enumerator unqualified.
+	static_assert( PT_COUNT - PT_ABOUT_TEXT == stoatworks::about::kParamCount,
+	               "the About run no longer matches StoatworksAbout.h -- "
+	               "add or remove a PT_ABOUT_BUTTON_n to match" );
 
 private:
 	/// The ParamID each presets::Param drives, in presets::Param order. The
@@ -148,5 +178,9 @@ private:
 	std::mutex textMutex;
 	std::string customText;
 
-	float params[ PT_COUNT ];
+	/// Zero-initialised: the constructor writes a default for every real
+	/// control, but the About block's ids are never stored to -- pressing a
+	/// button opens a browser and returns -- so without this GetFloatParameter
+	/// hands the host whatever was on the stack for them.
+	float params[ PT_COUNT ] = {};
 };
