@@ -60,6 +60,11 @@ public:
 	FFResult SetFloatParameter( unsigned int index, float value ) override;
 	float GetFloatParameter( unsigned int index ) override;
 
+	/// Test hook: the parameter ids a preset covers, in presets::Param
+	/// order. Handed out rather than copied into the harness, so a second
+	/// list cannot go quietly out of step with this one.
+	static const unsigned int* PresetParamIDsForTest( int& count );
+
 	FFResult SetTextParameter( unsigned int index, const char* value ) override;
 	char* GetTextParameter( unsigned int index ) override;
 
@@ -136,7 +141,38 @@ private:
 
 	/// Copy a factory preset's values into params[] and raise value events so
 	/// the host re-reads the sliders. `presetIndex` is 1-based; 0 is Custom.
+	/// The active preset's value for `id`, or -1 when no preset is active or
+	/// this one has no opinion about `id`. Preset values are all 0..1, so a
+	/// negative is unambiguous.
+	float presetValue( int presetIndex, unsigned int id ) const;
+
+	/// True when this write is the HOST restating a value it still believes in
+	/// rather than the operator moving anything -- in which case it must not
+	/// reach params[] and must not disturb the preset.
+	bool hostIsRestatingItself( unsigned int index, float value );
+
+	/// Record the defaults as the host's opening position, once, before
+	/// anything has had a chance to move them.
+	void seedHostValues();
+
 	void applyPreset( int presetIndex );
+
+	/// What the HOST last sent for each parameter, which is not the same thing
+	/// as what the plugin is rendering with.
+	///
+	/// FFGL's host owns parameter state. It pushes its own values back down
+	/// whenever it likes, and nothing obliges it to act on the value events
+	/// applyPreset raises -- Resolume does not. So a preset that writes params[]
+	/// and trusts the host to follow is relying on behaviour the specification
+	/// never promised, and when the host instead restates the values it still
+	/// believes in, the rule that a covered parameter changing means the
+	/// operator has taken over fires on the host's own echo and drops straight
+	/// back to Custom. Reported against vertigo as its issue #2; the same
+	/// pattern had been copied into all seven plugins.
+	///
+	/// Keeping the host's own last word separately is what tells the two apart.
+	float hostValues[ PT_COUNT ] = {};
+	bool hostValuesSeeded        = false;
 
 	/// Re-measure the alphabet and upload it. Called when the character set or
 	/// the custom string changes -- not per frame: the measurement is over a

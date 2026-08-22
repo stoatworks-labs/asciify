@@ -139,6 +139,11 @@ def diff(a, b):
 names = subprocess.run(["./build/asctest", "--list"], capture_output=True, text=True).stdout
 params = [" ".join(l.split()[1:-1]) for l in names.strip().splitlines()]
 
+# The About block is a text field and browser buttons, declared last. They
+# never touch a pixel, so sweeping them only buries a real dead control.
+if "About" in params:
+    params = params[:params.index("About")]
+
 print(f"{'parameter':<16} {'pixels changed':>15} {'mean delta':>11}   verdict")
 dead = []
 checked = 0

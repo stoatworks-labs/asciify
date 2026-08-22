@@ -271,6 +271,49 @@ still the only thing that measures anything.
 
 ## Factory presets
 
+### The host owns the parameters, and a preset had to learn that
+
+Reported against **vertigo** as its issue #2 and fixed across all seven plugins
+on 2026-08-22: choosing a factory preset in Resolume did nothing and the
+dropdown snapped straight back to `Custom`.
+
+The pattern was copy-based — `applyPreset` writes the values into `params[]` and
+raises `FF_EVENT_FLAG_VALUE` so the host re-reads its sliders — and it rests on
+an assumption FFGL never makes. **The host owns parameter state.** It pushes its
+own values back down whenever it likes, and nothing obliges it to act on a value
+event. Resolume does not: it carries on restating the values it still believes
+in, which are the ones from before the preset. Those restatements arrive as
+`SetFloatParameter` calls carrying a changed value, so the rule "a covered
+parameter changed, therefore the operator has taken over" fired on the host's
+own echo, instantly, every time.
+
+Three things now arrive through that one call while a preset is active, and only
+the third is a person:
+
+| What arrives | How it is recognised | What happens |
+|---|---|---|
+| the preset's own values, from a host that honoured the events | matches the preset | ignored — nothing to write |
+| the values from *before* the preset, from a host that did not | matches `hostValues[]`, the host's own last word | ignored — writing it would undo the preset |
+| a new value from neither | matches neither | written, and the preset falls back to Custom |
+
+`hostValues[]` is the record of what the **host** last sent, which is not what
+the plugin is rendering with, and `seedHostValues()` fills it from the defaults
+on the first parameter traffic — **before `applyPreset` can run**. Seeding it
+afterwards records the preset's own values as the host's opening position, so
+the host's very next restatement looks like an edit; that mistake was made once
+during the fix and the test caught it.
+
+Two tolerances matter and they are not the same number. `kSame` is **1e-3**, a
+host-quantisation allowance rather than a float epsilon — a host that keeps its
+parameters shorter than a float hands back a number *near* ours. The pre-existing
+"did a covered parameter move?" test below still works to 1e-4, which is why a
+value matching the preset is **ignored rather than written**: letting a rounded
+copy of our own value into `params[]` would trip that tighter test.
+
+`asctest --presets` drives all three hosts across every preset, with no GL
+involved, and runs in `tools/verify.sh`. Against the pre-fix code it fails in
+exactly the "ignores value events" column.
+
 `source/Presets.h` is one table of named looks in the host-facing 0..1
 parameter space, and it drives **both** builds — the FFGL constructor and the
 OFX describe each read it, so a preset cannot drift between Resolume and
