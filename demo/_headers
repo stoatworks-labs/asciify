@@ -2,11 +2,17 @@
   X-Content-Type-Options: nosniff
   X-Frame-Options: DENY
   Referrer-Policy: strict-origin-when-cross-origin
-  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; font-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors 'none'
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; font-src 'self' data:; connect-src 'self' https://intake.stoatworks-labs.com; object-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors 'none'
 
 # media-src blob: is load-bearing: dropping in your own video makes an object URL
-# for it. connect-src stays 'self' — nothing here calls out, and the demo would
-# rather fail visibly than quietly gain a network path.
+# for it.
+#
+# connect-src lists the intake origin, and that is not optional even though the
+# demo itself never calls out: the shared support footer carries a "Report a bug
+# or send feedback" button that POSTs there. With a bare `connect-src 'self'` the
+# report is refused — in PRODUCTION ONLY, because a local dev server does not
+# apply this file at all, so it fails nowhere you would notice while working on
+# it. This demo was one of eighteen that shipped that way.
 
 /vendor/*
   Cache-Control: public, max-age=3600
