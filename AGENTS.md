@@ -335,3 +335,10 @@ operator, and Mix is the wet/dry — neither is part of any look.
 Verified by rendering a preset and its hand-set equivalent through the offline
 harness and `ofxprobe --edit` (which delivers the set as a real user edit,
 with `kOfxActionInstanceChanged`) and comparing byte-for-byte.
+
+## Notes
+
+`docs/NOTES.md` carries this repo's working notes — current status, decisions
+already made, and the traps that have actually bitten. Read it before changing
+anything non-obvious. Cross-cutting fleet knowledge lives in
+[fleet-notes](https://github.com/stoatworks-labs/fleet-notes).
