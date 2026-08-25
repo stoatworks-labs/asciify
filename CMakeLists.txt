@@ -39,6 +39,14 @@ endif()
 
 option(ASCIIFY_BUILD_TOOLS "Build the offline render and measurement harness" ON)
 
+# The FFGL plugin, the FFGL SDK submodule and GLEW are one dependency group,
+# and the OpenFX plugin belongs to none of it. Turning this OFF builds the OFX
+# plugin alone, with no GL loader anywhere in the configure -- which is what
+# the Linux job does, because the FFGL SDK has no Linux path, and GLEW would
+# otherwise have to be installed to build something that never calls it.
+option(ASCIIFY_BUILD_FFGL "Build the FFGL plugin (needs the FFGL SDK and, off macOS, GLEW)" ON)
+
+if(ASCIIFY_BUILD_FFGL)
 # ---------------------------------------------------------------------------
 # The Resolume FFGL SDK, as a git submodule under external/.
 # ---------------------------------------------------------------------------
@@ -133,6 +141,8 @@ if(ASCIIFY_BUILD_TOOLS AND APPLE)
     )
 endif()
 
+endif()  # ASCIIFY_BUILD_FFGL
+
 # ---------------------------------------------------------------------------
 # The OpenFX build of the same effect, for Resolve/Nuke/Natron/Vegas. CPU
 # render against the vendored OFX SDK subset under external/openfx (C headers
@@ -226,7 +236,9 @@ elseif(APPLE)
         CACHE PATH "" FORCE)
 endif()
 
+if(ASCIIFY_BUILD_FFGL)
 install(TARGETS Asciify
     LIBRARY DESTINATION "."
     BUNDLE  DESTINATION "."
 )
+endif()  # ASCIIFY_BUILD_FFGL

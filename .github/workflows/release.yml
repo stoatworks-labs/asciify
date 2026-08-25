@@ -178,9 +178,98 @@ jobs:
           path: installers/*
           if-no-files-found: warn
 
+  linux-ofx:
+    name: linux-x86_64 (OpenFX)
+    runs-on: ubuntu-latest
+    # AlmaLinux 8 rather than the ubuntu image, for glibc 2.28 against 2.39.
+    # Resolve's supported Linux is Rocky 8.6, and a plugin linked against a
+    # newer glibc is refused by the loader on the distro Blackmagic actually
+    # ships for -- while anything newer than Rocky 8 loads a 2.28 build
+    # perfectly well. This is the widest target, not a concession.
+    #
+    # There is no FFGL half to this job. Resolume has no Linux build, the FFGL
+    # SDK has no Linux path, and the OpenFX plugin is a CPU render that never
+    # makes a GL call.
+    container: almalinux:8
+    steps:
+      # Ahead of checkout on purpose: actions/checkout shells out to git and
+      # the base image has none. gcc-toolset-13 because the stock gcc 8.5
+      # predates parts of the C++17 library this code uses.
+      - name: Toolchain
+        run: |
+          dnf -y install git cmake zip binutils gcc-toolset-13
+          source /opt/rh/gcc-toolset-13/enable
+          gcc --version
+
+      # No submodules: the FFGL SDK is the only one and this job does not build
+      # FFGL. The OpenFX SDK subset is vendored in-tree.
+      - uses: actions/checkout@v7
+
+      # ASCIIFY_BUILD_FFGL=OFF is what makes the job possible at all. With it
+      # ON, the SDK's own find_package(GLEW REQUIRED) fails at CONFIGURE time,
+      # so the build dies before compiling a line of a plugin that needs no GL
+      # loader.
+      #
+      # Static libstdc++/libgcc because gcc-toolset-13's runtime is not
+      # installed on a stock Rocky or Alma 8 -- a dynamically linked build
+      # would fail to load on precisely the machines this targets.
+      - name: Configure
+        run: |
+          source /opt/rh/gcc-toolset-13/enable
+          cmake -B build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DASCIIFY_BUILD_FFGL=OFF \
+            -DASCIIFY_BUILD_TOOLS=OFF \
+            -DCMAKE_CXX_FLAGS="-static-libstdc++ -static-libgcc"
+
+      - name: Build
+        run: |
+          source /opt/rh/gcc-toolset-13/enable
+          cmake --build build --parallel
+
+      - name: Collect artifact
+        run: |
+          so="build/Asciify.ofx.bundle/Contents/Linux-x86-64/Asciify.ofx"
+          test -f "$so"
+
+          # `nm ... | grep -q` SIGPIPEs under `bash -eo pipefail` when grep
+          # FINDS its match, failing the release on a correct binary. Captured
+          # and matched with `case` instead, as the macOS job does.
+          __syms=$( nm -D --defined-only "$so" )
+          case "$__syms" in
+            *OfxGetPlugin*) ;;
+            *) echo "expected OfxGetPlugin, got: $__syms"; exit 1 ;;
+          esac
+
+          # The whole reason for the container, asserted rather than assumed:
+          # the highest glibc symbol version the binary asks for must not be
+          # newer than Rocky 8's 2.28. Building in the right image is easy to
+          # get right and impossible to notice getting wrong.
+          __glibc=$( objdump -T "$so" | grep -o 'GLIBC_[0-9.]*' | sort -uV | tail -1 )
+          echo "highest glibc requirement: $__glibc"
+          if [ "$( printf '%s\nGLIBC_2.28\n' "$__glibc" | sort -uV | tail -1 )" != "GLIBC_2.28" ]; then
+            echo "$__glibc is newer than Rocky 8 provides"; exit 1
+          fi
+          readelf -d "$so" | grep NEEDED
+
+          mkdir -p "ofxout/Asciify.ofx.bundle/Contents/Linux-x86-64"
+          cp "$so" "ofxout/Asciify.ofx.bundle/Contents/Linux-x86-64/Asciify.ofx"
+          ls -R ofxout
+
+      - name: Archive (zip)
+        run: |
+          cd ofxout
+          zip -r "../asciify-ofx-linux-x86_64.zip" ./*
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: asciify-linux-x86_64
+          path: "*.zip"
+          if-no-files-found: error
+
   release:
     name: Publish release
-    needs: [build, windows-installer]
+    needs: [build, linux-ofx, windows-installer]
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     steps:
