@@ -55,6 +55,7 @@ restart the host:
 ```
 macOS    /Library/OFX/Plugins/
 Windows  C:\Program Files\Common Files\OFX\Plugins\
+Linux    /usr/OFX/Plugins/
 ```
 
 ---
