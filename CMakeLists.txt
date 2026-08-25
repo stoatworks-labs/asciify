@@ -195,6 +195,15 @@ if(BUILD_OFX)
         PLUGIN_VERSION_MINOR=${PROJECT_VERSION_MINOR}
     )
 
+    # Threads, explicitly. The OFX Support library's multi-thread suite calls
+    # pthread_create, and on Rocky 8 -- glibc 2.28, the floor Resolve supports
+    # -- that still lives in libpthread; libpthread was only folded into libc in
+    # glibc 2.34. Leave it out and the plugin compiles, links, passes a symbol
+    # check and a glibc-version check, and then fails at dlopen with "undefined
+    # symbol: pthread_create". macOS and Windows never show it.
+    find_package(Threads REQUIRED)
+    target_link_libraries(AsciifyOFX PRIVATE Threads::Threads)
+
     # An OFX plugin is not a macOS .bundle in the CMake sense: hosts expect the
     # fixed layout <Name>.ofx.bundle/Contents/<arch>/<Name>.ofx, assembled here
     # by hand. "MacOS" is the OFX architecture name for universal binaries.
