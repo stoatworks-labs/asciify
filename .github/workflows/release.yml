@@ -285,7 +285,7 @@ jobs:
     container: rockylinux:8
     steps:
       - name: Toolchain
-        run: dnf -y install gcc unzip
+        run: dnf -y install gcc unzip findutils bash
 
       - uses: actions/download-artifact@v8
         with:
@@ -293,9 +293,11 @@ jobs:
           path: art
 
       - name: Load the plugin and ask it what it is
+        shell: bash
         run: |
           unzip -q art/*.zip -d unz
           so="$( find unz -name '*.ofx' | head -1 )"
+          test -n "$so"
           echo "testing $so"
           ldd "$so" || true
 
@@ -316,6 +318,8 @@ jobs:
 
           int main( int argc, char **argv )
           {
+              if( argc < 2 ) { fprintf( stderr, "usage: probe <plugin.ofx>\n" ); return 2; }
+
               void *h = dlopen( argv[ 1 ], RTLD_NOW | RTLD_LOCAL );
               if( !h ) { fprintf( stderr, "dlopen: %s\n", dlerror() ); return 1; }
 
