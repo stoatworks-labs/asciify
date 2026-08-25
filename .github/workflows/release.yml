@@ -267,9 +267,81 @@ jobs:
           path: "*.zip"
           if-no-files-found: error
 
+  linux-load:
+    name: linux-x86_64 (load test)
+    needs: linux-ofx
+    runs-on: ubuntu-latest
+    # Rocky 8 and not the AlmaLinux 8 that built it: the claim being tested is
+    # "this loads on the distro Resolve supports", and testing it in the image
+    # that produced the binary would only prove the image agrees with itself.
+    #
+    # This is a LOAD test, not a render test. It dlopens the shipped .ofx and
+    # calls the two entry points an OFX host calls first, which runs the OFX
+    # Support library's static initialisers and the factory construction in
+    # getPluginIDs -- the parts that actually fail when an ABI or a glibc floor
+    # is wrong. What it does not do is render a frame or drive a real host;
+    # Resolve is x86_64-only and needs a GPU, so nothing here stands in for
+    # having run the plugin in Resolve.
+    container: rockylinux:8
+    steps:
+      - name: Toolchain
+        run: dnf -y install gcc unzip
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: asciify-linux-x86_64
+          path: art
+
+      - name: Load the plugin and ask it what it is
+        run: |
+          unzip -q art/*.zip -d unz
+          so="$( find unz -name '*.ofx' | head -1 )"
+          echo "testing $so"
+          ldd "$so" || true
+
+          cat > probe.c <<'EOF'
+          #include <dlfcn.h>
+          #include <stdio.h>
+
+          /* The head of OfxPlugin from ofxCore.h, which is all this needs. */
+          typedef struct {
+              const char  *pluginApi;
+              int          apiVersion;
+              const char  *pluginIdentifier;
+              unsigned int pluginVersionMajor;
+              unsigned int pluginVersionMinor;
+              void        *setHost;
+              void        *mainEntry;
+          } OfxPluginHead;
+
+          int main( int argc, char **argv )
+          {
+              void *h = dlopen( argv[ 1 ], RTLD_NOW | RTLD_LOCAL );
+              if( !h ) { fprintf( stderr, "dlopen: %s\n", dlerror() ); return 1; }
+
+              int            ( *count )( void ) = dlsym( h, "OfxGetNumberOfPlugins" );
+              OfxPluginHead *( *get )( int )    = dlsym( h, "OfxGetPlugin" );
+              if( !count || !get ) { fprintf( stderr, "entry points missing\n" ); return 1; }
+
+              int n = count();
+              printf( "OfxGetNumberOfPlugins -> %d\n", n );
+              if( n < 1 ) { fprintf( stderr, "no plugins in the bundle\n" ); return 1; }
+
+              for( int i = 0; i < n; ++i ) {
+                  OfxPluginHead *p = get( i );
+                  if( !p ) { fprintf( stderr, "OfxGetPlugin(%d) is NULL\n", i ); return 1; }
+                  printf( "  [%d] %s  api=%s v%u.%u\n", i, p->pluginIdentifier,
+                          p->pluginApi, p->pluginVersionMajor, p->pluginVersionMinor );
+              }
+              return 0;
+          }
+          EOF
+          gcc -O0 -o probe probe.c -ldl
+          ./probe "$so"
+
   release:
     name: Publish release
-    needs: [build, linux-ofx, windows-installer]
+    needs: [build, linux-ofx, linux-load, windows-installer]
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     steps:
