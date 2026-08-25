@@ -248,8 +248,12 @@ changing anything — it has the design invariants and the traps.
 - **It has never been loaded into Resolume.** Everything about how the
   parameters *present* in the host is untested — the colour swatches, the
   grouping, and in particular whether the Custom Set text field appears at all.
-- **Never built on Linux.** There is no CI job for it. Nothing in the code is
-  platform-specific outside `Diag.cpp`, but that is an argument.
+- **The OpenFX plugin builds on Linux, and is known to load there.** CI builds
+  it in an AlmaLinux 8 container (glibc 2.28, the floor Resolve's supported
+  Rocky 8 provides) and then, in a separate Rocky 8 container, `dlopen`s the
+  shipped `.ofx` and calls the entry points a host calls first. It reports
+  itself as `com.stoatworks.asciify`. The **FFGL** plugin is still not built
+  for Linux, because Resolume has no Linux build to load it.
 - **Nothing timed.** The cell pass compares every glyph in the alphabet against
   every cell. It should be cheap — it runs at one pixel per character, not per
   screen pixel — but that is an argument, not a measurement.

@@ -76,7 +76,18 @@ job can. Worth checking first thing on any new FFGL repo.
 **Not verified:** never loaded into Resolume (so how the parameters *present* is
 untested — especially the `FF_TYPE_TEXT` Custom Set field, which the SDK supports
 and Resolume's own example uses but which nobody here has seen render); never
-built on Linux; nothing timed. Installed to
+built on Linux; nothing timed.
+
+**The OpenFX build now ships for Linux too** (2026-08-25), because Resolve runs
+there. Built in an AlmaLinux 8 container for glibc 2.28 -- Resolve's supported
+Linux is Rocky 8.6, and a newer glibc floor is refused by the loader on exactly
+that distro. Proven by `dlopen` on Rocky 8, not by argument, and that mattered:
+four plugins in the fleet failed the load test with `undefined symbol:
+pthread_create`, because on glibc 2.28 pthreads are still in libpthread (they
+merged into libc in 2.34) and nothing linked it. It compiles, links, exports
+`OfxGetPlugin` and passes a glibc-version assertion before failing at load --
+the version check reads what a binary *asks for*, never what provides it. FFGL
+is still macOS/Windows only; Resolume has no Linux build. Installed to
 `~/Documents/Resolume Arena/Extra Effects/`.
 
 **The release video is rendered, not filmed** (no window to film), like porthole's

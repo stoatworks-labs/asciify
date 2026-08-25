@@ -207,9 +207,14 @@ not for a pixel:
   Custom Set field appears at all, whether the groups read sensibly — is
   untested. The text parameter is the least certain: the SDK supports it and
   Resolume's own example uses it, but that is not the same as having seen it.
-- **Never built on Linux.** There is no CI job for it, and nothing has tried. The
-  code uses nothing platform-specific outside `Diag.cpp`, but that is an
-  argument rather than a build.
+- **The OpenFX plugin is built and load-tested on Linux.** The `linux-ofx` job
+  builds it in an AlmaLinux 8 container with `ASCIIFY_BUILD_FFGL=OFF` -- the
+  FFGL SDK has no Linux path and its `find_package(GLEW REQUIRED)` would fail
+  at configure time for a plugin that makes no GL call. `linux-load` then
+  `dlopen`s the result on Rocky 8 and calls `OfxGetNumberOfPlugins` /
+  `OfxGetPlugin`. That test earned its place immediately: it caught a missing
+  `pthread_create`, which compiles, links and passes a glibc-version check
+  before failing at load. The **FFGL** plugin remains macOS/Windows only.
 - **Nothing timed.** The cell pass compares every glyph in the alphabet against
   every cell — up to 95 comparisons per cell for the ASCII set, ~123 for a full
   custom alphabet. At 320 columns on a 4K frame that is 320×180 cells × 95, which
