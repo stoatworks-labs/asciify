@@ -168,8 +168,9 @@ jobs:
           rm -rf "$stage"; mkdir -p "$stage"
           unzip -q "$zip" -d "$stage"
           cp README.md "$stage/" 2>/dev/null || true
-          # --cli: a plugin has no executable to make a shortcut to.
-          rl_nsis windows-x86_64 "$stage" --cli
+          # --plain: a plugin needs neither a shortcut nor a PATH entry. It was --cli
+          # until nib#2, where the unguarded PATH write wiped a system PATH.
+          rl_nsis windows-x86_64 "$stage" --plain
           ls -l installers
 
       - uses: actions/upload-artifact@v7
