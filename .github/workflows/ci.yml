@@ -1,0 +1,103 @@
+name: ci
+
+# Until this existed the repo had no workflow with a `pull_request` trigger at
+# all — only a tag-driven release — so a Dependabot bump or an outside PR
+# arrived with no status check to gate a merge on. Its sibling plugins have
+# carried this since 2026-08-11; these four were missed.
+#
+# macOS only. The CMakeLists branches on APPLE and WIN32 with no Linux path, and
+# the Windows job wants GLEW from vcpkg, which is slow to put in front of every
+# pull request. That trade is worth revisiting if a Windows-only break ever gets
+# through — cogwheel's ci.yml documents one that did.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: macOS
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # The FFGL SDK is a submodule. Without this, CMake fails at configure
+          # time with a missing-directory error that reads like a broken repo.
+          submodules: recursive
+
+      - name: Configure
+        # arm64 only, unlike the release build's universal slice: a source break
+        # is not architecture-specific, and the second slice doubles the build
+        # for no extra signal.
+        run: >
+          cmake -B build
+          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_OSX_ARCHITECTURES=arm64
+          -DASCIIFY_BUILD_TOOLS=ON
+
+      - name: Build
+        run: cmake --build build --config Release --parallel
+
+      - name: The plugins register and their entry points survived the link
+        # A plugin that compiles and links can still be inert: if the
+        # registration translation unit is dropped, or the entry point is not
+        # exported, the host loads nothing and says nothing. Both are cheap to
+        # assert and neither needs a GPU.
+        #
+        # Format-aware, because this repo builds more than one kind of bundle.
+        # FFGL exports plugMain and carries a four-character registration id;
+        # OpenFX exports OfxGetPlugin and carries neither. Asserting plugMain
+        # against an .ofx.bundle fails a build that is entirely correct.
+        shell: bash
+        run: |
+          set -euo pipefail
+          bundles=$(find build -maxdepth 2 -name '*.bundle' -type d | sort)
+          if [ -z "$bundles" ]; then
+            echo "::error::no .bundle was produced under build/"
+            find build -maxdepth 2 | head -20
+            exit 1
+          fi
+
+          strings_file="$RUNNER_TEMP/ffgl-strings.txt"
+          : > "$strings_file"
+
+          while IFS= read -r bundle; do
+            [ -n "$bundle" ] || continue
+            binary="$bundle/Contents/MacOS/$(basename "${bundle%.bundle}")"
+            if [ ! -f "$binary" ]; then
+              echo "::error::no executable at $binary"
+              ls -R "$bundle" | head -20
+              exit 1
+            fi
+            symbols=$(nm -gU "$binary")
+            case "$bundle" in
+              *.ofx.bundle)
+                echo "openfx: $bundle"
+                case "$symbols" in
+                  *_OfxGetPlugin*) echo "  ok: OfxGetPlugin exported" ;;
+                  *) echo "::error::$binary does not export OfxGetPlugin — the host will not load it"; exit 1 ;;
+                esac
+                ;;
+              *)
+                echo "ffgl: $bundle"
+                case "$symbols" in
+                  *_plugMain*) echo "  ok: plugMain exported" ;;
+                  *) echo "::error::$binary does not export plugMain — the host will not load it"; exit 1 ;;
+                esac
+                strings "$binary" >> "$strings_file"
+                ;;
+            esac
+          done <<< "$bundles"
+
+          ffgl_strings=$(cat "$strings_file")
+          case "$ffgl_strings" in
+            *AS01*) echo "ok: AS01 survived the link" ;;
+            *) echo "::error::AS01 is in no FFGL bundle — its registration TU was dropped"; exit 1 ;;
+          esac
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: asciify-macos-arm64
+          path: build/*.bundle
+          if-no-files-found: error
