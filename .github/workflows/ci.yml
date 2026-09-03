@@ -44,29 +44,41 @@ jobs:
         # registration translation unit is dropped, or plugMain is not exported,
         # the host loads nothing and says nothing. Both are cheap to assert and
         # neither needs a GPU.
+        #
+        # Every bundle, not the first one found — this repo builds more than one
+        # FFGL plugin, and each carries its own registration ID.
         shell: bash
         run: |
           set -euo pipefail
-          bundle=$(find build -maxdepth 2 -name '*.bundle' -print -quit)
-          if [ -z "$bundle" ]; then
+          bundles=$(find build -maxdepth 2 -name '*.bundle' -type d)
+          if [ -z "$bundles" ]; then
             echo "::error::no .bundle was produced under build/"
-            find build -maxdepth 2 -type d -name '*.bundle' -o -maxdepth 2 -type f | head -20
+            find build -maxdepth 2 | head -20
             exit 1
           fi
-          echo "bundle: $bundle"
-          binary="$bundle/Contents/MacOS/$(basename "${bundle%.bundle}")"
-          [ -f "$binary" ] || { echo "::error::no executable at $binary"; ls -R "$bundle" | head -20; exit 1; }
 
-          symbols=$(nm -gU "$binary")
-          case "$symbols" in
-            *_plugMain*) echo "ok: plugMain exported" ;;
-            *) echo "::error::plugMain is not exported — the host will not load this"; exit 1 ;;
-          esac
+          all=""
+          while IFS= read -r bundle; do
+            [ -n "$bundle" ] || continue
+            binary="$bundle/Contents/MacOS/$(basename "${bundle%.bundle}")"
+            if [ ! -f "$binary" ]; then
+              echo "::error::no executable at $binary"
+              ls -R "$bundle" | head -20
+              exit 1
+            fi
+            echo "bundle: $bundle"
+            case "$(nm -gU "$binary")" in
+              *_plugMain*) echo "  ok: plugMain exported" ;;
+              *) echo "::error::$binary does not export plugMain — the host will not load it"; exit 1 ;;
+            esac
+            strings "$binary" >> "$RUNNER_TEMP/all-strings.txt"
+          done <<< "$bundles"
 
-          literals=$(strings "$binary")
-          case "$literals" in
+          all=$(cat "$RUNNER_TEMP/all-strings.txt")
+
+          case "$all" in
             *AS01*) echo "ok: AS01 survived the link" ;;
-            *) echo "::error::AS01 is not in the binary — its registration TU was dropped"; exit 1 ;;
+            *) echo "::error::AS01 is in no bundle — its registration TU was dropped"; exit 1 ;;
           esac
 
       - uses: actions/upload-artifact@v7
