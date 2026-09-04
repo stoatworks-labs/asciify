@@ -26,7 +26,7 @@ static CFFGLPluginInfo PluginInfo(
 	0,                                              // Plugin major version number
 	1,                                              // Plugin minor version number
 	FF_EFFECT,                                      // Plugin type
-	"Renders the clip as ASCII art",                // Plugin description
+	"Renders the clip as ASCII art, choosing each character by what it looks like rather than by how bright it is.\n\nMost ASCII art is a brightness ramp: measure a cell, look the value up in a hand-written string, print that character. It works, and it throws away every edge in the picture.\n\nHere a cell is treated as a small picture, and the glyph that stands in for it is the one whose ink is distributed most like it - how much ink, and where. That is enough to tell a vertical bar from a horizontal one, and one diagonal from the other, so edges survive instead of turning to mush.\n\nStart from a Preset, at the bottom.",// Plugin description
 	"Asciify FFGL effect"                           // About
 );
 
