@@ -61,6 +61,8 @@ jobs:
         uses: stoatworks-labs/smoke-check@v1
         with:
           dir: demo
+          root: body
+          min-text: "0"
 
       # wrangler is pinned rather than left to resolve to latest: an unpinned npx
       # would let a wrangler major change how deploys behave on a morning nobody
@@ -68,8 +70,8 @@ jobs:
       # refs, never a version inside a `run:`, so bump this deliberately.
       - name: Deploy to Cloudflare
         env:
-          CLOUDFLARE_API_TOKEN: ${ secrets.CLOUDFLARE_API_TOKEN }
-          CLOUDFLARE_ACCOUNT_ID: ${ vars.CLOUDFLARE_ACCOUNT_ID }
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           WRANGLER_SEND_METRICS: "false"
         run: npx --yes wrangler@4.116.0 deploy
 
