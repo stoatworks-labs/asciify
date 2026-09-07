@@ -86,15 +86,20 @@ jobs:
       # then DOES include Cloudflare's injected script and its per-request nonce,
       # and the hash comes out different on every attempt. Dropping that one line
       # makes the comparison work whether the page closes its head or not.
+      #
+      # -F is load-bearing: without it grep reads the $ signs as end-of-line
+      # anchors and the pattern matches nothing at all, so the filter silently
+      # does nothing. It looked like it worked only because GitHub's runners do
+      # not get served the challenge script in the first place.
       - name: Check the live site is serving this build
         run: |
           set -euo pipefail
           want=$(sed -n '1,/<\/head>/p' demo/index.html \
-                 | grep -v '__CF$cv$params' | shasum -a 256 | cut -d' ' -f1)
+                 | grep -vF '__CF$cv$params' | shasum -a 256 | cut -d' ' -f1)
           echo "expecting the live <head> to hash to $want"
           for attempt in 1 2 3 4 5; do
             got=$(curl -sS --max-time 30 "https://asciify-demo.stoatworks-labs.com/" \
-                  | sed -n '1,/<\/head>/p' | grep -v '__CF$cv$params' \
+                  | sed -n '1,/<\/head>/p' | grep -vF '__CF$cv$params' \
                   | shasum -a 256 | cut -d' ' -f1 || true)
             if [ "$got" = "$want" ]; then
               echo "live site is serving this build (attempt $attempt)"
