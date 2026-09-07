@@ -80,14 +80,22 @@ jobs:
       # </body> carrying a per-request nonce, so no two responses are identical.
       # The <head> is untouched by that injection and carries the hashed asset
       # names, so it moves for a code change and a meta-only change alike.
+      #
+      # The grep is not belt-and-braces. A page with no </head> at all — flock's
+      # hand-written demo is one — makes the sed print the whole document, which
+      # then DOES include Cloudflare's injected script and its per-request nonce,
+      # and the hash comes out different on every attempt. Dropping that one line
+      # makes the comparison work whether the page closes its head or not.
       - name: Check the live site is serving this build
         run: |
           set -euo pipefail
-          want=$(sed -n '1,/<\/head>/p' demo/index.html | shasum -a 256 | cut -d' ' -f1)
+          want=$(sed -n '1,/<\/head>/p' demo/index.html \
+                 | grep -v '__CF$cv$params' | shasum -a 256 | cut -d' ' -f1)
           echo "expecting the live <head> to hash to $want"
           for attempt in 1 2 3 4 5; do
             got=$(curl -sS --max-time 30 "https://asciify-demo.stoatworks-labs.com/" \
-                  | sed -n '1,/<\/head>/p' | shasum -a 256 | cut -d' ' -f1 || true)
+                  | sed -n '1,/<\/head>/p' | grep -v '__CF$cv$params' \
+                  | shasum -a 256 | cut -d' ' -f1 || true)
             if [ "$got" = "$want" ]; then
               echo "live site is serving this build (attempt $attempt)"
               exit 0
