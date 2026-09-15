@@ -4,6 +4,10 @@ Asciify is **an ASCII art renderer for [Resolume](https://resolume.com) Arena an
 FFGL effect. It divides the frame into character cells and replaces each one with the character
 that stands in for it best.
 
+![The repo's type card at 80 columns, rendered by the plugin's own offline harness in a headless GL context — not a Resolume screen capture.](hero.jpg)
+
+*The repo's type card at 80 columns, rendered by the plugin's own offline harness in a headless GL context — not a Resolume screen capture. A tone ramp on the left, bars at eight angles in the middle, and concentric rings on the right, which is where the shape matching is easiest to see.*
+
 The thing that makes it different from every other ASCII effect is what "best" means. Most of them
 are a brightness ramp: measure a cell, look the value up in a hand-written string like
 `" .:-=+*#%@"`, print that character. Asciify treats a cell as **a small picture** and matches the
