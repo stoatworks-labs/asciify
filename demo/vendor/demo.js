@@ -95,6 +95,9 @@ function el(tag, className, text) {
  * @param {string} demo.repo          GitHub URL
  * @param {string} [demo.page]        stoatworks-labs.com project page, if it exists yet
  * @param {string} [demo.video]       YouTube watch URL
+ * @param {string} [demo.blurb]     replaces the banner's middle clause, for a
+ *   plugin the stock wording does not describe — a source with no clip, say.
+ *   The "This is not the plugin" opening and the FFGL closing stay either way.
  * @param {string[]} demo.differences what this page does NOT reproduce
  * @param {Array} demo.params         parameter declarations (see params.js)
  * @param {string[]} demo.sources     ids from sources.js, first is the default
@@ -327,11 +330,20 @@ function buildHeader(demo) {
 
   const banner = el('div', 'banner');
   banner.append(el('strong', 'banner__tag', 'Browser demo'));
+  // `blurb` exists because the default sentence is not true of every plugin in
+  // the suite. It says the page runs "on generated clips", which is right for an
+  // effect and wrong for a SOURCE — spasis is driven by a generated audio
+  // programme and has no video input at all, so the stock wording would have the
+  // banner itself making the kind of claim the banner exists to prevent.
+  //
+  // It is an override of the middle clause only. "This is not the plugin" opens
+  // it and the FFGL sentence closes it either way, because those are the two
+  // parts no demo may drop.
   banner.append(
     el(
       'p',
       'banner__text',
-      `This is not the plugin. It is ${demo.name}'s own GLSL, ported from the repository to WebGL2 and running on generated clips in this page — same parameters, same maths, no install. The plugin itself is a native FFGL effect for Resolume Arena and Avenue.`,
+      `This is not the plugin. ${demo.blurb ?? `It is ${demo.name}'s own GLSL, ported from the repository to WebGL2 and running on generated clips in this page — same parameters, same maths, no install.`} The plugin itself is a native FFGL effect for Resolume Arena and Avenue.`,
     ),
   );
   header.append(banner);

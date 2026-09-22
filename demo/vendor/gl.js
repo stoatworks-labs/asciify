@@ -44,11 +44,44 @@ export function port(source, { stage = 'fragment' } = {}) {
   // reads a usampler2D fails to compile with "No precision specified" and
   // nothing else. Desktop GL needs none of this, which is why the plugins'
   // sources carry none. coinop reads its playfield through a usampler2D.
+  //
+  // The array and 3D samplers are the same story: in the fragment stage ES 3.00
+  // gives a default precision only to sampler2D and samplerCube, so every one of
+  // sampler2DArray, sampler3D and their u/i variants has to be declared. What
+  // makes these worse than the integer samplers is that some drivers let them
+  // through anyway, so the shader compiles on the machine it was written on and
+  // fails on someone else's with `'sampler2DArray' : No precision specified` and
+  // nothing else. readout reads its ring of recent frames — one
+  // GL_TEXTURE_2D_ARRAY — through a sampler2DArray.
   const precision =
     stage === 'fragment'
       ? 'precision highp float;\nprecision highp int;\nprecision highp sampler2D;\n'
         + 'precision highp usampler2D;\nprecision highp isampler2D;\n'
+        + 'precision highp sampler2DArray;\nprecision highp usampler2DArray;\n'
+        + 'precision highp isampler2DArray;\n'
+        + 'precision highp sampler3D;\nprecision highp usampler3D;\n'
+        + 'precision highp isampler3D;\n'
       : 'precision highp float;\nprecision highp int;\n';
+
+  // `precise` is dropped, because ES 3.00 does not have it. It arrived in
+  // GLSL 4.00 and in ES only at 3.20, so a WebGL2 context rejects it outright
+  // with "'precise' : undeclared identifier" followed by a syntax error on the
+  // type that came after it.
+  //
+  // **This one removes a guarantee rather than translating a spelling, and it
+  // is the only thing port() does that can change a result.** `precise` exists
+  // to stop a compiler reassociating an expression, and the case that needs it
+  // is double-float arithmetic: Dekker's split, `cona - ( cona - a.x )`, is
+  // only a no-op if reassociation is allowed, and a compiler that takes it away
+  // leaves arithmetic which still runs, still type-checks, and silently has 24
+  // bits of mantissa instead of 48.
+  //
+  // So a browser MAY render a deep zoom coarser than the plugin does, and there
+  // is no way to ask it not to. That is a real difference and the demo that
+  // relies on it has to say so on the page — which is the rule this kit is
+  // built on, and is why this is handled here with a note rather than by
+  // quietly editing the plugin's shader.
+  out = out.replace(/\bprecise\s+/g, '');
 
   // `float[]( a, b )` -> `float[N]( a, b )`. Both spellings are legal in
   // desktop GL; ES 3.00 wants the size on the constructor when the array is
