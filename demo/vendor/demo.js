@@ -98,6 +98,10 @@ function el(tag, className, text) {
  * @param {string} [demo.blurb]     replaces the banner's middle clause, for a
  *   plugin the stock wording does not describe — a source with no clip, say.
  *   The "This is not the plugin" opening and the FFGL closing stay either way.
+ * @param {string|string[]} [demo.kind] what the plugin registers as, from its
+ *   PluginInfo: 'effect' (the default), 'source' or 'mixer', or a list when
+ *   the repo registers more than one plugin (['effect', 'source']). The
+ *   banner's closing sentence says it.
  * @param {string[]} demo.differences what this page does NOT reproduce
  * @param {Array} demo.params         parameter declarations (see params.js)
  * @param {string[]} demo.sources     ids from sources.js, first is the default
@@ -325,6 +329,34 @@ export function mountDemo(demo) {
   return { params, state, redraw: request };
 }
 
+/**
+ * The banner's closing sentence: what the plugin is in Resolume.
+ *
+ * Until 2026-09-24 this was a fixed "a native FFGL effect" on every page, which
+ * was false for the sources (astable, needle, copperlist, spasis) and the mixers
+ * (genlock, wipe) — the one sentence no page could override was the one that was
+ * wrong for them, and genlock had to contradict it in its own disclosure. It now
+ * says what the plugin's registration declares: `demo.kind` is the PluginInfo
+ * type (FF_EFFECT, FF_SOURCE, FF_MIXER) in words, and a repo that registers two
+ * plugins lists both. An unknown word throws rather than printing a guess.
+ */
+const KINDS = ['effect', 'source', 'mixer'];
+
+function nativeSentence(demo) {
+  const kinds = [].concat(demo.kind ?? 'effect');
+  for (const k of kinds) {
+    if (!KINDS.includes(k)) {
+      throw new Error(`demo.kind "${k}" is not one of ${KINDS.join(', ')}`);
+    }
+  }
+  if (kinds.length === 1) {
+    return `The plugin itself is a native FFGL ${kinds[0]} for Resolume Arena and Avenue.`;
+  }
+  const list = kinds.map((k) => `a native FFGL ${k}`);
+  const joined = `${list.slice(0, -1).join(', ')} and ${list[list.length - 1]}`;
+  return `The plugin itself ships as ${joined} for Resolume Arena and Avenue.`;
+}
+
 function buildHeader(demo) {
   const header = el('header', 'head');
 
@@ -343,7 +375,7 @@ function buildHeader(demo) {
     el(
       'p',
       'banner__text',
-      `This is not the plugin. ${demo.blurb ?? `It is ${demo.name}'s own GLSL, ported from the repository to WebGL2 and running on generated clips in this page — same parameters, same maths, no install.`} The plugin itself is a native FFGL effect for Resolume Arena and Avenue.`,
+      `This is not the plugin. ${demo.blurb ?? `It is ${demo.name}'s own GLSL, ported from the repository to WebGL2 and running on generated clips in this page — same parameters, same maths, no install.`} ${nativeSentence(demo)}`,
     ),
   );
   header.append(banner);
@@ -528,7 +560,7 @@ function buildTransport(demo, state, params, request) {
     const back = el('select', 'transport__select');
     for (const b of BACKDROPS) back.append(new Option(b.name, b.id));
     back.value = state.backdrop;
-    back.title = 'What sits under the effect. The output carries real alpha, and in Resolume that would be the layers below.';
+    back.title = 'What sits under the plugin’s output. It carries real alpha, and in Resolume that would be the layers below.';
     back.addEventListener('change', () => {
       state.backdrop = back.value;
       announce();
