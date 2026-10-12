@@ -147,8 +147,9 @@ macOS builds are signed and notarised and open normally. The Windows builds are 
 
 ## OpenFX — Resolve, Vegas, Nuke, Natron
 
-The same effect also builds as an OpenFX plugin, so it runs in DaVinci Resolve
-(Edit and Color pages, and Fusion), Vegas Pro, Nuke and Natron. It's the same
+The same effect also builds as an OpenFX plugin, for DaVinci Resolve (Edit and
+Color pages, and Fusion), Vegas Pro, Nuke and Natron, though it hasn't been run in
+any of them yet (see [Status](#status)). It's the same
 matching: the OpenFX build links the same font, alphabets and moment maths the
 harness tests.
 
@@ -158,6 +159,7 @@ Grab the `asciify-ofx-*` zip for your platform from the release and copy
 ```
 macOS    /Library/OFX/Plugins/
 Windows  C:\Program Files\Common Files\OFX\Plugins\
+Linux    /usr/OFX/Plugins/
 ```
 
 
@@ -264,7 +266,7 @@ changing anything: it has the design invariants and the traps.
 - **It has never been loaded into Resolume.** I haven't tested anything about
   how the parameters *present* in the host: the colour swatches, the grouping,
   and in particular whether the Custom Set text field appears at all.
-- **I haven't run the OpenFX plugin in a host on Linux.** The load test renders
+- **I haven't run the OpenFX plugin in a host, on Linux or anywhere else.** The load test renders
   no frame and drives no host, so whether the effect works in Resolve on Linux
   is still open.
 - **Nothing timed.** The cell pass compares every glyph in the alphabet against
