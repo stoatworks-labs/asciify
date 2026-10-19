@@ -183,9 +183,9 @@ not for a pixel:
 - **The font's invariants.** 123 glyphs, all inside the 128-slot atlas, no code
   point drawn twice, no two glyphs drawn identically. The last is a precondition
   of `--match` being able to attribute a rendered cell at all.
-- **No dead controls.** All 18 parameters measurably change the picture,
-  including the text parameter, which `--set` cannot reach and which
-  `asctest --custom` exists for.
+- **No dead controls.** All 19 parameters measurably change the picture (the
+  Preset among them; swept again on 2026-10-19), including the text parameter,
+  which `--set` cannot reach and which `asctest --custom` exists for.
 - **The build is universal and exports `plugMain`** — `lipo` reports
   `x86_64 arm64`, `nm -gU` finds `_plugMain`.
 - **Windows compiles**, proven by a `workflow_dispatch` run that built the macOS

@@ -40,7 +40,7 @@ Windows  %USERPROFILE%\Documents\Resolume Arena\Extra Effects\
 ```
 
 Avenue uses the same layout under its own folder name. Asciify then appears in the effects
-browser.
+browser as **SW Asciify**.
 
 **Needs Resolume Arena or Avenue 7.3.1 or newer.**
 

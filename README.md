@@ -211,7 +211,7 @@ folder and restart Resolume:
 - Windows — `Documents\Resolume Arena\Extra Effects\`
 
 Use `Resolume Avenue` in place of `Resolume Arena` for Avenue. The effect appears
-as **Asciify**.
+as **SW Asciify**.
 
 ## Build
 
@@ -244,8 +244,8 @@ changing anything: it has the design invariants and the traps.
   cells: **zero disagreements**. That path goes through the mip chain, the tone
   curve, the dither, the moment measurement, the search, and the atlas
   addressing, so it's a stronger check than it looks.
-- **No control is silently dead.** All 18 parameters measurably change the
-  picture (`tools/sweep.py`), including the text parameter.
+- **No control is silently dead.** All 19 parameters measurably change the
+  picture (`tools/sweep.py`), including the text parameter and the Preset.
 - **The font's invariants**: 123 glyphs inside a 128-slot atlas, no duplicate
   code points, no two glyphs drawn identically (`asctest --font`).
 - **The macOS build is universal and exports `plugMain`**: `lipo` reports
