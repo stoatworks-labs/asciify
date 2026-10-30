@@ -23,7 +23,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { name: macos-universal, os: macos-14,       artifact: Asciify.bundle }
+          - { name: macos-universal, os: macos-15,       artifact: Asciify.bundle }
           - { name: windows-x86_64,  os: windows-latest, artifact: Asciify.dll }
     steps:
       - uses: actions/checkout@v7
