@@ -142,9 +142,9 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     # makensis cross-compiles, so the installer is wrapped here from the zip the
-    # Windows job uploaded. Its directory page defaults to the common FFGL
-    # folder but stays editable, because Resolume reads plugins from a path the
-    # user chooses per edition.
+    # Windows job uploaded. --ffgl points its directory page at
+    # Documents\Resolume Arena\Extra Effects, the folder Resolume reads, and
+    # leaves it editable for Avenue's.
     steps:
       - uses: actions/checkout@v7
 
@@ -168,9 +168,10 @@ jobs:
           rm -rf "$stage"; mkdir -p "$stage"
           unzip -q "$zip" -d "$stage"
           cp README.md "$stage/" 2>/dev/null || true
-          # --plain: a plugin needs neither a shortcut nor a PATH entry. It was --cli
-          # until nib#2, where the unguarded PATH write wiped a system PATH.
-          rl_nsis windows-x86_64 "$stage" --plain
+          # --ffgl: per user, into Documents\Resolume Arena\Extra Effects
+          # (Avenue's where only Avenue is installed), with no shortcut and no
+          # PATH entry.
+          rl_nsis windows-x86_64 "$stage" --ffgl
           ls -l installers
 
       - uses: actions/upload-artifact@v7
