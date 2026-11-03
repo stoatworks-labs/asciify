@@ -357,6 +357,23 @@ function nativeSentence(demo) {
   return `The plugin itself ships as ${joined} for Resolume Arena and Avenue.`;
 }
 
+/**
+ * The project page named in the page's own head, for a demo whose plugin.js
+ * does not pass `page`.
+ *
+ * Until 2026-11-03 the header linked the project page only when plugin.js
+ * passed `page`, and 37 of the 110 demos never did, so a visitor who arrived on
+ * the demo first had no way to the downloads but the GitHub repo. Every
+ * index.html now carries `<meta name="project-page">` beside its canonical
+ * link, and this reads it. It is a tag in the page rather than a URL worked
+ * out from the host name for the reason `page` is guarded below: only the page
+ * knows whether a project page exists yet, and a derived link would 404 for a
+ * plugin the website has not written up.
+ */
+function projectPageFromHead() {
+  return document.querySelector('meta[name="project-page"]')?.content || null;
+}
+
 function buildHeader(demo) {
   const header = el('header', 'head');
 
@@ -399,7 +416,8 @@ function buildHeader(demo) {
   // with a page already live, which is why this went unnoticed — the rule the
   // rest of the fleet follows is that a missing link is left out rather than
   // rendered as one that 404s.
-  if (demo.page) add(demo.page, 'Project page and downloads');
+  const page = demo.page ?? projectPageFromHead();
+  if (page) add(page, 'Project page and downloads');
   add(demo.repo, 'Source on GitHub');
   if (demo.video) add(demo.video, 'Video');
   header.append(links);

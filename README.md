@@ -15,6 +15,8 @@ interesting question than the usual brightness ramp lets on.
 
 **Video:** [What it does, in 45 seconds](https://www.youtube.com/watch?v=Hzy60YIhKpg)
 
+The [project page](https://stoatworks-labs.com/software/asciify/) has the downloads, the [user guide](https://stoatworks-labs.com/software/asciify/guide/) and the video.
+
 ![The default green terminal on the type card](docs/hero.jpg)
 
 <sub>The repo's type card at 80 columns: a tone ramp on the left, bars at eight
